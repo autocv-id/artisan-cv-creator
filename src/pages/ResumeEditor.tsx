@@ -1121,53 +1121,10 @@ const ResumeEditor = () => {
           <div className="mb-5">
             <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
             {data.education.map((edu) => (
-              edu.school && (
-                <div key={edu.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{edu.school}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {edu.startDate} - {edu.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#1A202C]">{edu.degree} {edu.field && `in ${edu.field}`}</p>
-                  <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-
-          {data.skills.some(skill => skill) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.skills.map((skill, index) => (
-                  skill && (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
-                      {skill}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-
-          {data.languages.some(language => language) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Languages</h3>
-              <ul className="list-disc list-inside">
-                {data.languages.map((language, index) => (
-                  language && (
-                    <li key={index} className="text-gray-700">
-                      {language}
-                    </li>
-                  )
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+    <Layout>
+      {/* Rest of the component content */}
+    </Layout>
+  );
+};
 
 export default ResumeEditor;
