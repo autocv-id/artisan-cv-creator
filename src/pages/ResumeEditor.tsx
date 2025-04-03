@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -22,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getTemplateById } from '../data/templates';
 
 // Initial resume data structure
 const initialResumeData = {
@@ -77,18 +77,22 @@ interface ResumeContent {
   languages?: string[];
 }
 
+// Simulasi status pengguna (dalam implementasi nyata, ini akan berasal dari sistem autentikasi)
+const isPremiumUser = false;
+
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
   const [currentTemplate, setCurrentTemplate] = useState('professional');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [resumeTitle, setResumeTitle] = useState('Untitled Resume');
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id, templateId } = useParams();
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch resume data if editing an existing resume
   useEffect(() => {
@@ -153,6 +157,43 @@ const ResumeEditor = () => {
 
     fetchResumeData();
   }, [id, user, toast]);
+
+  useEffect(() => {
+    if (!templateId) {
+      setError('No template ID provided');
+      setIsLoading(false);
+      return;
+    }
+
+    const template = getTemplateById(templateId);
+    
+    if (!template) {
+      setError('Template not found');
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if user has access to premium templates
+    if (template.category === 'premium' && !isPremiumUser) {
+      setError('This is a premium template. Please upgrade to access it.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Simulate loading template data
+    const loadTemplate = async () => {
+      try {
+        // In a real app, you would load the template structure here
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network request
+        setIsLoading(false);
+      } catch (err) {
+        setError('Failed to load template');
+        setIsLoading(false);
+      }
+    };
+
+    loadTemplate();
+  }, [templateId]);
 
   // Handle personal info changes
   const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -522,6 +563,12 @@ const ResumeEditor = () => {
     );
   };
 
+  const handleUpgradeClick = () => {
+    // In a real app, this would redirect to the upgrade page
+    alert('Redirecting to upgrade page...');
+    // navigate('/pricing');
+  };
+
   if (isLoading) {
     return (
       <Layout withFooter={false}>
@@ -533,6 +580,50 @@ const ResumeEditor = () => {
       </Layout>
     );
   }
+
+  if (error) {
+    return (
+      <Layout withFooter={false}>
+        <div className="container mx-auto px-4 md:px-6 py-12">
+          <div className="flex justify-center">
+            <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Error</h2>
+              <p className="text-gray-600 mb-4">{error}</p>
+              
+              {error.includes('premium') ? (
+                <div>
+                  <button 
+                    onClick={handleUpgradeClick}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors mr-2"
+                  >
+                    Upgrade to Premium
+                  </button>
+                  <button 
+                    onClick={() => navigate('/templates')}
+                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+                  >
+                    Back to Templates
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => navigate('/templates')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Back to Templates
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const template = getTemplateById(templateId!);
 
   return (
     <Layout withFooter={false}>

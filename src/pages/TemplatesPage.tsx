@@ -1,155 +1,153 @@
-
-import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { templates } from '../data/templates';
+import { Template } from '../types/template';
 
-// Template categories
-const categories = [
-  "All Templates",
-  "Professional",
-  "Modern",
-  "Creative",
-  "Simple",
-  "ATS-Optimized"
-];
+// Simulasi status pengguna (dalam implementasi nyata, ini akan berasal dari sistem autentikasi)
+const isPremiumUser = false;
 
-// Mock template data
-const templates = [
-  {
-    id: 1,
-    name: "Executive",
-    category: "Professional",
-    color: "1A365D", // dark blue
-    popular: true,
-  },
-  {
-    id: 2,
-    name: "Milano",
-    category: "Modern",
-    color: "38B2AC", // teal
-    popular: false,
-  },
-  {
-    id: 3,
-    name: "Creative Studio",
-    category: "Creative",
-    color: "4299E1", // blue
-    popular: true,
-  },
-  {
-    id: 4,
-    name: "Minimalist",
-    category: "Simple",
-    color: "718096", // gray
-    popular: false,
-  },
-  {
-    id: 5,
-    name: "Corporate",
-    category: "Professional",
-    color: "2D3748", // dark gray
-    popular: false,
-  },
-  {
-    id: 6,
-    name: "Digital",
-    category: "Modern",
-    color: "4C51BF", // indigo
-    popular: true,
-  },
-  {
-    id: 7,
-    name: "Artisan",
-    category: "Creative",
-    color: "B83280", // pink
-    popular: false,
-  },
-  {
-    id: 8,
-    name: "Clean Resume",
-    category: "Simple",
-    color: "2C7A7B", // teal dark
-    popular: true,
-  },
-  {
-    id: 9,
-    name: "ATS Pro",
-    category: "ATS-Optimized",
-    color: "333333", // dark
-    popular: true,
-  }
-];
+const TemplatesPage: React.FC = () => {
+  const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
+  
+  const filteredTemplates = templates.filter(template => {
+    if (filter === 'all') return true;
+    return template.category === filter;
+  });
 
-const TemplatesPage = () => {
-  const [activeCategory, setActiveCategory] = useState("All Templates");
-
-  const filteredTemplates = activeCategory === "All Templates" 
-    ? templates 
-    : templates.filter(template => template.category === activeCategory);
+  const handleFilterChange = (newFilter: 'all' | 'free' | 'premium') => {
+    setFilter(newFilter);
+  };
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 md:px-6 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-5xl font-bold text-resume-primary mb-4">Resume Templates</h1>
-          <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-            Choose from our collection of professionally designed templates optimized to pass Applicant Tracking Systems
-          </p>
-        </div>
-
-        <div className="mb-8">
-          <Tabs defaultValue="All Templates" className="w-full">
-            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-              {categories.map((category) => (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  onClick={() => setActiveCategory(category)}
-                  className="data-[state=active]:bg-resume-primary data-[state=active]:text-white"
-                >
-                  {category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredTemplates.map((template) => (
-            <div 
-              key={template.id} 
-              className="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all animate-zoom"
-            >
-              <div className="relative">
-                <img 
-                  src={`https://placehold.co/400x500/${template.color}/FFFFFF/png?text=${template.name}`}
-                  alt={`${template.name} template`}
-                  className="w-full object-cover h-80"
-                />
-                {template.popular && (
-                  <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded">
-                    POPULAR
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                  <Link to={`/editor/new?template=${template.id}`}>
-                    <Button className="bg-white text-resume-primary hover:bg-white/90">
-                      Use This Template
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="text-xl font-semibold text-gray-800">{template.name}</h3>
-                <p className="text-gray-600 mt-1">{template.category}</p>
-              </div>
-            </div>
-          ))}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8 text-center">Resume Templates</h1>
+      
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex rounded-md shadow-sm" role="group">
+          <button
+            type="button"
+            onClick={() => handleFilterChange('all')}
+            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+              filter === 'all' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            All Templates
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('free')}
+            className={`px-4 py-2 text-sm font-medium ${
+              filter === 'free' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            Free
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('premium')}
+            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+              filter === 'premium' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            Premium
+          </button>
         </div>
       </div>
-    </Layout>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTemplates.map((template) => (
+          <TemplateCard 
+            key={template.id} 
+            template={template} 
+            isPremiumUser={isPremiumUser} 
+          />
+        ))}
+      </div>
+      
+      {!isPremiumUser && (
+        <div className="mt-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg">
+          <h2 className="text-2xl font-bold mb-2">Upgrade to Premium</h2>
+          <p className="mb-4">Get access to all premium templates and exclusive features to create standout resumes.</p>
+          <button 
+            className="bg-white text-indigo-600 px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors"
+            onClick={() => alert('Upgrade functionality would go here')}
+          >
+            Upgrade Now
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface TemplateCardProps {
+  template: Template;
+  isPremiumUser: boolean;
+}
+
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, isPremiumUser }) => {
+  const isPremium = template.category === 'premium';
+  const isLocked = isPremium && !isPremiumUser;
+  
+  return (
+    <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+      <div className="relative">
+        <img 
+          src={template.thumbnail} 
+          alt={template.name} 
+          className={`w-full h-48 object-cover ${isLocked ? 'filter blur-sm' : ''}`}
+          onError={(e) => {
+            // Fallback image if template image fails to load
+            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=Template';
+          }}
+        />
+        
+        {isPremium && (
+          <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+            PREMIUM
+          </span>
+        )}
+        
+        {isLocked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="text-white text-center p-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <p className="font-medium">Premium Template</p>
+              <p className="text-sm">Upgrade to access</p>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-4">
+        <h3 className="font-bold text-lg mb-1">{template.name}</h3>
+        <p className="text-gray-600 text-sm mb-4">{template.description}</p>
+        
+        {isLocked ? (
+          <button 
+            className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors"
+            onClick={() => alert('Please upgrade to premium to use this template')}
+          >
+            Unlock Template
+          </button>
+        ) : (
+          <Link 
+            to={`/editor/${template.id}`}
+            className="block w-full text-center bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Use This Template
+          </Link>
+        )}
+      </div>
+    </div>
   );
 };
 
