@@ -802,7 +802,6 @@ const ResumeEditor = () => {
     );
   };
 
-  // Placeholder for premium templates - actual implementations below are simplified
   const CreativeTemplate = ({ data }: { data: ResumeDataType }) => {
     return (
       <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
@@ -873,4 +872,40 @@ const ResumeEditor = () => {
             {data.languages.some(language => language) && (
               <div>
                 <h3 className="text-xl font-bold text-[#4299E1] mb-3">Languages</h3>
-                <ul className="list-disc list-
+                <ul className="list-disc list-inside">
+                  {data.languages.map((language, index) => (
+                    language && (
+                      <li key={index} className="text-gray-700">
+                        {language}
+                      </li>
+                    )
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CorporateTemplate = ({ data }: { data: ResumeDataType }) => {
+    // Implementation of CorporateTemplate
+  };
+
+  const DigitalTemplate = ({ data }: { data: ResumeDataType }) => {
+    // Implementation of DigitalTemplate
+  };
+
+  const ExecutiveTemplate = ({ data }: { data: ResumeDataType }) => {
+    // Implementation of ExecutiveTemplate
+  };
+
+  return (
+    <Layout>
+      {/* Rest of the component content */}
+    </Layout>
+  );
+};
+
+export default ResumeEditor;
