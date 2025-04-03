@@ -1,6 +1,5 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,10 +76,20 @@ interface ResumeContent {
   languages?: string[];
 }
 
+// Template interface matching database structure
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+  is_premium: boolean;
+  thumbnail: string;
+}
+
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
-  const [currentTemplate, setCurrentTemplate] = useState('professional');
+  const [currentTemplate, setCurrentTemplate] = useState<string>('professional');
+  const [templateData, setTemplateData] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resumeTitle, setResumeTitle] = useState('Untitled Resume');
   const [isSaving, setIsSaving] = useState(false);
@@ -89,6 +98,36 @@ const ResumeEditor = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+
+  // Fetch template info
+  useEffect(() => {
+    const fetchTemplateData = async (templateId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setTemplateData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching template data:', error);
+      }
+    };
+
+    // Get template from URL params or state
+    const templateFromUrl = searchParams.get('template');
+    if (templateFromUrl) {
+      setCurrentTemplate(templateFromUrl);
+      fetchTemplateData(templateFromUrl);
+    } else if (currentTemplate) {
+      fetchTemplateData(currentTemplate);
+    }
+  }, [currentTemplate, searchParams]);
 
   // Fetch resume data if editing an existing resume
   useEffect(() => {
@@ -107,6 +146,7 @@ const ResumeEditor = () => {
           
           if (data) {
             setResumeTitle(data.title || 'Untitled Resume');
+            setCurrentTemplate(data.template_id || 'professional');
             
             // Type assertion to help TypeScript understand the structure
             const content = data.content as ResumeContent;
@@ -315,6 +355,28 @@ const ResumeEditor = () => {
 
     setIsSaving(true);
     try {
+      // Check if the template is premium and user is on free plan
+      if (templateData?.is_premium) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        // If user is on free plan but trying to use premium template
+        if (profileData?.subscription_status === 'free') {
+          toast({
+            title: "Premium template",
+            description: "Please upgrade to use premium templates",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Determine if we're creating a new resume or updating an existing one
       if (id && id !== 'new') {
         // Update existing resume
@@ -323,6 +385,7 @@ const ResumeEditor = () => {
           .update({
             title: resumeTitle,
             content: resumeData,
+            template_id: currentTemplate,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id)
@@ -337,6 +400,7 @@ const ResumeEditor = () => {
             user_id: user.id,
             title: resumeTitle,
             content: resumeData,
+            template_id: currentTemplate,
           });
 
         if (error) throw error;
@@ -362,7 +426,7 @@ const ResumeEditor = () => {
     }
   };
 
-  // Handle download PDF
+  // Handle download PDF with improved quality
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
@@ -372,19 +436,21 @@ const ResumeEditor = () => {
       }
 
       const canvas = await html2canvas(resumeElement, {
-        scale: 2, // Higher scale for better quality
+        scale: 4, // Higher scale for better quality
         logging: false,
         useCORS: true,
         allowTaint: true,
+        backgroundColor: '#ffffff',
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0); // Use maximum quality
       
       // Create PDF of A4 size
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
+        compress: false, // Disable compression for better quality
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -395,7 +461,7 @@ const ResumeEditor = () => {
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
       const imgY = 0;
       
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio, '', 'FAST');
       pdf.save(`${resumeTitle || 'resume'}.pdf`);
       
       toast({
@@ -431,30 +497,51 @@ const ResumeEditor = () => {
     }
   };
 
-  // Mock resume preview component
-  const ResumePreview = () => {
+  // Resume Preview Components based on template
+  const renderResumePreview = () => {
+    switch (currentTemplate) {
+      case 'modern':
+        return <ModernTemplate data={resumeData} />;
+      case 'creative':
+        return <CreativeTemplate data={resumeData} />;
+      case 'minimalist':
+        return <MinimalistTemplate data={resumeData} />;
+      case 'executive':
+        return <ExecutiveTemplate data={resumeData} />;
+      case 'corporate': 
+        return <CorporateTemplate data={resumeData} />;
+      case 'digital':
+        return <DigitalTemplate data={resumeData} />;
+      case 'professional':
+      default:
+        return <ProfessionalTemplate data={resumeData} />;
+    }
+  };
+
+  // Templates
+  const ProfessionalTemplate = ({ data }: { data: ResumeDataType }) => {
     return (
       <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
-        <div className="bg-resume-primary text-white p-6">
-          <h2 className="text-2xl font-bold">{resumeData.personalInfo.fullName || 'Your Name'}</h2>
-          <p>{resumeData.personalInfo.title || 'Professional Title'}</p>
+        <div className="bg-[#1A365D] text-white p-6">
+          <h2 className="text-2xl font-bold">{data.personalInfo.fullName || 'Your Name'}</h2>
+          <p>{data.personalInfo.title || 'Professional Title'}</p>
           <div className="flex flex-wrap gap-3 mt-2 text-sm">
-            <span>{resumeData.personalInfo.email}</span>
-            <span>{resumeData.personalInfo.phone}</span>
-            <span>{resumeData.personalInfo.location}</span>
+            <span>{data.personalInfo.email}</span>
+            <span>{data.personalInfo.phone}</span>
+            <span>{data.personalInfo.location}</span>
           </div>
         </div>
         <div className="p-6">
-          {resumeData.personalInfo.summary && (
+          {data.personalInfo.summary && (
             <div className="mb-5">
               <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Summary</h3>
-              <p className="text-gray-700">{resumeData.personalInfo.summary}</p>
+              <p className="text-gray-700">{data.personalInfo.summary}</p>
             </div>
           )}
           
           <div className="mb-5">
             <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Experience</h3>
-            {resumeData.experience.map((exp) => (
+            {data.experience.map((exp) => (
               exp.company && (
                 <div key={exp.id} className="mb-4">
                   <div className="flex justify-between">
@@ -463,7 +550,7 @@ const ResumeEditor = () => {
                       {exp.startDate} - {exp.endDate || 'Present'}
                     </span>
                   </div>
-                  <p className="text-resume-primary">{exp.company}</p>
+                  <p className="text-[#1A365D]">{exp.company}</p>
                   <p className="text-gray-700 text-sm mt-1">{exp.description}</p>
                 </div>
               )
@@ -472,7 +559,7 @@ const ResumeEditor = () => {
           
           <div className="mb-5">
             <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
-            {resumeData.education.map((edu) => (
+            {data.education.map((edu) => (
               edu.school && (
                 <div key={edu.id} className="mb-4">
                   <div className="flex justify-between">
@@ -481,18 +568,18 @@ const ResumeEditor = () => {
                       {edu.startDate} - {edu.endDate || 'Present'}
                     </span>
                   </div>
-                  <p className="text-resume-primary">{edu.degree} {edu.field && `in ${edu.field}`}</p>
+                  <p className="text-[#1A365D]">{edu.degree} {edu.field && `in ${edu.field}`}</p>
                   <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
                 </div>
               )
             ))}
           </div>
           
-          {resumeData.skills.some(skill => skill) && (
+          {data.skills.some(skill => skill) && (
             <div className="mb-5">
               <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Skills</h3>
               <div className="flex flex-wrap gap-2">
-                {resumeData.skills.map((skill, index) => (
+                {data.skills.map((skill, index) => (
                   skill && (
                     <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
                       {skill}
@@ -503,11 +590,11 @@ const ResumeEditor = () => {
             </div>
           )}
           
-          {resumeData.languages.some(language => language) && (
+          {data.languages.some(language => language) && (
             <div>
               <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Languages</h3>
               <div className="flex flex-wrap gap-2">
-                {resumeData.languages.map((language, index) => (
+                {data.languages.map((language, index) => (
                   language && (
                     <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
                       {language}
@@ -522,464 +609,268 @@ const ResumeEditor = () => {
     );
   };
 
-  if (isLoading) {
+  const ModernTemplate = ({ data }: { data: ResumeDataType }) => {
     return (
-      <Layout withFooter={false}>
-        <div className="container mx-auto px-4 md:px-6 py-12">
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout withFooter={false}>
-      <div className="container mx-auto px-4 md:px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold text-resume-primary">Resume Editor</h1>
-            <div className="flex items-center space-x-2">
-              <Input
-                value={resumeTitle}
-                onChange={(e) => setResumeTitle(e.target.value)}
-                className="max-w-xs"
-                placeholder="Resume Title"
-              />
+      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
+        <div className="flex flex-col md:flex-row">
+          <div className="bg-[#38B2AC] text-white p-6 md:w-1/3">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-1">{data.personalInfo.fullName || 'Your Name'}</h2>
+              <p className="text-white/90">{data.personalInfo.title || 'Professional Title'}</p>
             </div>
+            
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2 border-b border-white/30 pb-1">Contact</h3>
+              <div className="space-y-2 text-sm">
+                <p>{data.personalInfo.email}</p>
+                <p>{data.personalInfo.phone}</p>
+                <p>{data.personalInfo.location}</p>
+              </div>
+            </div>
+            
+            {data.skills.some(skill => skill) && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2 border-b border-white/30 pb-1">Skills</h3>
+                <div className="flex flex-wrap gap-1">
+                  {data.skills.map((skill, index) => (
+                    skill && (
+                      <span key={index} className="bg-white/20 px-2 py-1 rounded text-xs mb-1">
+                        {skill}
+                      </span>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {data.languages.some(language => language) && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 border-b border-white/30 pb-1">Languages</h3>
+                <div className="flex flex-col gap-1">
+                  {data.languages.map((language, index) => (
+                    language && (
+                      <span key={index} className="text-sm">
+                        {language}
+                      </span>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleSave} 
-              className="flex gap-2 items-center"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <div className="animate-spin h-4 w-4 border-t-2 border-primary rounded-full" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Save
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleDownload} 
-              className="flex gap-2 items-center"
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <div className="animate-spin h-4 w-4 border-t-2 border-primary rounded-full" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              Download PDF
-            </Button>
-            <Link to="/dashboard">
-              <Button variant="secondary" className="flex gap-2 items-center">
-                Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Editor Section */}
-          <div className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-4 mb-4">
-                <TabsTrigger value="personalInfo" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
-                  Personal
-                </TabsTrigger>
-                <TabsTrigger value="experience" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
-                  Experience
-                </TabsTrigger>
-                <TabsTrigger value="education" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
-                  Education
-                </TabsTrigger>
-                <TabsTrigger value="skills" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
-                  Skills
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="personalInfo" className="animate-fade-in">
-                <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="fullName">Full Name</Label>
-                        <Input 
-                          id="fullName" 
-                          name="fullName" 
-                          value={resumeData.personalInfo.fullName} 
-                          onChange={handlePersonalInfoChange} 
-                          placeholder="John Doe"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Professional Title</Label>
-                        <Input 
-                          id="title" 
-                          name="title" 
-                          value={resumeData.personalInfo.title} 
-                          onChange={handlePersonalInfoChange} 
-                          placeholder="Software Engineer"
-                        />
-                      </div>
+          
+          <div className="p-6 md:w-2/3">
+            {data.personalInfo.summary && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Professional Summary</h3>
+                <p className="text-gray-700">{data.personalInfo.summary}</p>
+              </div>
+            )}
+            
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Experience</h3>
+              {data.experience.map((exp) => (
+                exp.company && (
+                  <div key={exp.id} className="mb-4">
+                    <div className="flex flex-col md:flex-row md:justify-between mb-1">
+                      <h4 className="font-semibold text-[#38B2AC]">{exp.position}</h4>
+                      <span className="text-gray-600 text-sm">
+                        {exp.startDate} - {exp.endDate || 'Present'}
+                      </span>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input 
-                          id="email" 
-                          name="email" 
-                          type="email" 
-                          value={resumeData.personalInfo.email} 
-                          onChange={handlePersonalInfoChange} 
-                          placeholder="john.doe@example.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone</Label>
-                        <Input 
-                          id="phone" 
-                          name="phone" 
-                          value={resumeData.personalInfo.phone} 
-                          onChange={handlePersonalInfoChange}
-                          placeholder="+1 (123) 456-7890" 
-                        />
-                      </div>
+                    <p className="font-medium">{exp.company}</p>
+                    <p className="text-gray-700 text-sm mt-1">{exp.description}</p>
+                  </div>
+                )
+              ))}
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
+              {data.education.map((edu) => (
+                edu.school && (
+                  <div key={edu.id} className="mb-4">
+                    <div className="flex flex-col md:flex-row md:justify-between mb-1">
+                      <h4 className="font-semibold">{edu.school}</h4>
+                      <span className="text-gray-600 text-sm">
+                        {edu.startDate} - {edu.endDate || 'Present'}
+                      </span>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input 
-                        id="location" 
-                        name="location" 
-                        value={resumeData.personalInfo.location} 
-                        onChange={handlePersonalInfoChange}
-                        placeholder="New York, NY" 
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="summary">Professional Summary</Label>
-                      <Textarea 
-                        id="summary" 
-                        name="summary" 
-                        value={resumeData.personalInfo.summary} 
-                        onChange={handlePersonalInfoChange}
-                        placeholder="Brief overview of your qualifications and career goals"
-                        rows={4} 
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-                <div className="flex justify-end mt-4">
-                  <Button onClick={nextTab} className="bg-resume-primary hover:bg-resume-primary/90 flex gap-2 items-center">
-                    Next 
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="experience" className="animate-fade-in">
-                <Card>
-                  <CardContent className="pt-6">
-                    {resumeData.experience.map((exp) => (
-                      <div key={exp.id} className="mb-6 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold">Work Experience</h3>
-                          {resumeData.experience.length > 1 && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => removeExperience(exp.id)}
-                              className="text-red-500 hover:text-red-700 flex gap-1 items-center"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Remove
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor={`company-${exp.id}`}>Company</Label>
-                              <Input 
-                                id={`company-${exp.id}`}
-                                value={exp.company}
-                                onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)}
-                                placeholder="Company Name"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`position-${exp.id}`}>Position</Label>
-                              <Input 
-                                id={`position-${exp.id}`}
-                                value={exp.position}
-                                onChange={(e) => handleExperienceChange(exp.id, 'position', e.target.value)}
-                                placeholder="Job Title"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor={`startDate-${exp.id}`}>Start Date</Label>
-                              <Input 
-                                id={`startDate-${exp.id}`}
-                                value={exp.startDate}
-                                onChange={(e) => handleExperienceChange(exp.id, 'startDate', e.target.value)}
-                                placeholder="Jan 2020"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`endDate-${exp.id}`}>End Date</Label>
-                              <Input 
-                                id={`endDate-${exp.id}`}
-                                value={exp.endDate}
-                                onChange={(e) => handleExperienceChange(exp.id, 'endDate', e.target.value)}
-                                placeholder="Present"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`description-${exp.id}`}>Description</Label>
-                            <Textarea 
-                              id={`description-${exp.id}`}
-                              value={exp.description}
-                              onChange={(e) => handleExperienceChange(exp.id, 'description', e.target.value)}
-                              placeholder="Describe your responsibilities and achievements"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4 flex gap-2 items-center justify-center"
-                      onClick={addExperience}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Another Experience
-                    </Button>
-                  </CardContent>
-                </Card>
-                <div className="flex justify-between mt-4">
-                  <Button variant="outline" onClick={prevTab} className="flex gap-2 items-center">
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button onClick={nextTab} className="bg-resume-primary hover:bg-resume-primary/90 flex gap-2 items-center">
-                    Next
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="education" className="animate-fade-in">
-                <Card>
-                  <CardContent className="pt-6">
-                    {resumeData.education.map((edu) => (
-                      <div key={edu.id} className="mb-6 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold">Education</h3>
-                          {resumeData.education.length > 1 && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => removeEducation(edu.id)}
-                              className="text-red-500 hover:text-red-700 flex gap-1 items-center"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Remove
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor={`school-${edu.id}`}>School</Label>
-                              <Input 
-                                id={`school-${edu.id}`}
-                                value={edu.school}
-                                onChange={(e) => handleEducationChange(edu.id, 'school', e.target.value)}
-                                placeholder="University Name"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`degree-${edu.id}`}>Degree</Label>
-                              <Input 
-                                id={`degree-${edu.id}`}
-                                value={edu.degree}
-                                onChange={(e) => handleEducationChange(edu.id, 'degree', e.target.value)}
-                                placeholder="Bachelor of Science"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor={`field-${edu.id}`}>Field of Study</Label>
-                              <Input 
-                                id={`field-${edu.id}`}
-                                value={edu.field}
-                                onChange={(e) => handleEducationChange(edu.id, 'field', e.target.value)}
-                                placeholder="Computer Science"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor={`eduStartDate-${edu.id}`}>Start Date</Label>
-                              <Input 
-                                id={`eduStartDate-${edu.id}`}
-                                value={edu.startDate}
-                                onChange={(e) => handleEducationChange(edu.id, 'startDate', e.target.value)}
-                                placeholder="Sep 2016"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`eduEndDate-${edu.id}`}>End Date</Label>
-                              <Input 
-                                id={`eduEndDate-${edu.id}`}
-                                value={edu.endDate}
-                                onChange={(e) => handleEducationChange(edu.id, 'endDate', e.target.value)}
-                                placeholder="Jun 2020"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`eduDescription-${edu.id}`}>Additional Information</Label>
-                            <Textarea 
-                              id={`eduDescription-${edu.id}`}
-                              value={edu.description}
-                              onChange={(e) => handleEducationChange(edu.id, 'description', e.target.value)}
-                              placeholder="Honors, GPA, relevant coursework, etc."
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4 flex gap-2 items-center justify-center"
-                      onClick={addEducation}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Another Education
-                    </Button>
-                  </CardContent>
-                </Card>
-                <div className="flex justify-between mt-4">
-                  <Button variant="outline" onClick={prevTab} className="flex gap-2 items-center">
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button onClick={nextTab} className="bg-resume-primary hover:bg-resume-primary/90 flex gap-2 items-center">
-                    Next
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="skills" className="animate-fade-in">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold mb-4">Skills</h3>
-                      {resumeData.skills.map((skill, index) => (
-                        <div key={index} className="flex gap-2 mb-2">
-                          <Input 
-                            value={skill}
-                            onChange={(e) => handleSkillChange(index, e.target.value)}
-                            placeholder="Add a skill (e.g., JavaScript, Project Management)"
-                          />
-                          {resumeData.skills.length > 1 && (
-                            <Button 
-                              variant="outline" 
-                              size="icon"
-                              onClick={() => removeSkill(index)}
-                              className="text-red-500 hover:text-red-700 flex-shrink-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      <Button 
-                        variant="outline" 
-                        className="mt-2 flex gap-2 items-center"
-                        onClick={addSkill}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Skill
-                      </Button>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Languages</h3>
-                      {resumeData.languages.map((language, index) => (
-                        <div key={index} className="flex gap-2 mb-2">
-                          <Input 
-                            value={language}
-                            onChange={(e) => handleLanguageChange(index, e.target.value)}
-                            placeholder="Add a language (e.g., English, Spanish)"
-                          />
-                          {resumeData.languages.length > 1 && (
-                            <Button 
-                              variant="outline" 
-                              size="icon"
-                              onClick={() => removeLanguage(index)}
-                              className="text-red-500 hover:text-red-700 flex-shrink-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      <Button 
-                        variant="outline" 
-                        className="mt-2 flex gap-2 items-center"
-                        onClick={addLanguage}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Language
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                <div className="flex justify-start mt-4">
-                  <Button variant="outline" onClick={prevTab} className="flex gap-2 items-center">
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Resume Preview */}
-          <div className="hidden lg:block sticky top-24 h-[calc(100vh-140px)] overflow-auto">
-            <h2 className="text-xl font-semibold mb-4">Preview</h2>
-            <ResumePreview />
+                    <p className="text-[#38B2AC]">{edu.degree} {edu.field && `in ${edu.field}`}</p>
+                    <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
+                  </div>
+                )
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </Layout>
-  );
-};
+    );
+  };
 
-export default ResumeEditor;
+  const MinimalistTemplate = ({ data }: { data: ResumeDataType }) => {
+    return (
+      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
+        <div className="p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-1">{data.personalInfo.fullName || 'Your Name'}</h2>
+            <p className="text-gray-600">{data.personalInfo.title || 'Professional Title'}</p>
+            
+            <div className="flex justify-center flex-wrap gap-4 mt-3 text-sm">
+              {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
+              {data.personalInfo.phone && <span>• {data.personalInfo.phone}</span>}
+              {data.personalInfo.location && <span>• {data.personalInfo.location}</span>}
+            </div>
+          </div>
+          
+          {data.personalInfo.summary && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-center">Summary</h3>
+              <p className="text-gray-700 text-center">{data.personalInfo.summary}</p>
+            </div>
+          )}
+          
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-center">Experience</h3>
+            {data.experience.map((exp) => (
+              exp.company && (
+                <div key={exp.id} className="mb-5">
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className="font-semibold">{exp.position}</h4>
+                    <span className="text-gray-600 text-sm">
+                      {exp.startDate} - {exp.endDate || 'Present'}
+                    </span>
+                  </div>
+                  <p className="text-gray-700">{exp.company}</p>
+                  <p className="text-gray-600 text-sm mt-2">{exp.description}</p>
+                </div>
+              )
+            ))}
+          </div>
+          
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-center">Education</h3>
+            {data.education.map((edu) => (
+              edu.school && (
+                <div key={edu.id} className="mb-5">
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className="font-semibold">{edu.school}</h4>
+                    <span className="text-gray-600 text-sm">
+                      {edu.startDate} - {edu.endDate || 'Present'}
+                    </span>
+                  </div>
+                  <p className="text-gray-700">{edu.degree} {edu.field && `in ${edu.field}`}</p>
+                  <p className="text-gray-600 text-sm mt-2">{edu.description}</p>
+                </div>
+              )
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {data.skills.some(skill => skill) && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-center">Skills</h3>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {data.skills.map((skill, index) => (
+                    skill && (
+                      <span key={index} className="border border-gray-300 px-3 py-1 rounded-full text-sm">
+                        {skill}
+                      </span>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {data.languages.some(language => language) && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-center">Languages</h3>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {data.languages.map((language, index) => (
+                    language && (
+                      <span key={index} className="border border-gray-300 px-3 py-1 rounded-full text-sm">
+                        {language}
+                      </span>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Placeholder for premium templates - actual implementations below are simplified
+  const CreativeTemplate = ({ data }: { data: ResumeDataType }) => {
+    return (
+      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
+        <div className="bg-gradient-to-r from-[#4299E1] to-[#63B3ED] text-white p-6">
+          <h2 className="text-3xl font-bold tracking-wide">{data.personalInfo.fullName || 'Your Name'}</h2>
+          <p className="text-white/90 font-light text-lg">{data.personalInfo.title || 'Professional Title'}</p>
+          <div className="flex flex-wrap gap-3 mt-4 text-sm">
+            {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
+            {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
+            {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
+          </div>
+        </div>
+        
+        <div className="p-6 grid grid-cols-1 md:grid-cols-5 gap-6">
+          <div className="md:col-span-3 space-y-6">
+            {data.personalInfo.summary && (
+              <div>
+                <h3 className="text-xl font-bold text-[#4299E1] mb-3">About Me</h3>
+                <p className="text-gray-700 italic">{data.personalInfo.summary}</p>
+              </div>
+            )}
+            
+            <div>
+              <h3 className="text-xl font-bold text-[#4299E1] mb-3">Experience</h3>
+              {data.experience.map((exp) => (
+                exp.company && (
+                  <div key={exp.id} className="mb-5 relative pl-6 before:content-[''] before:absolute before:left-0 before:top-2 before:w-3 before:h-3 before:bg-[#4299E1] before:rounded-full">
+                    <h4 className="font-bold text-lg">{exp.position}</h4>
+                    <p className="text-[#4299E1] font-medium">{exp.company}</p>
+                    <p className="text-gray-500 text-sm">{exp.startDate} - {exp.endDate || 'Present'}</p>
+                    <p className="text-gray-700 mt-2">{exp.description}</p>
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+          
+          <div className="md:col-span-2 space-y-6">
+            <div>
+              <h3 className="text-xl font-bold text-[#4299E1] mb-3">Education</h3>
+              {data.education.map((edu) => (
+                edu.school && (
+                  <div key={edu.id} className="mb-5">
+                    <h4 className="font-bold">{edu.school}</h4>
+                    <p>{edu.degree} {edu.field && `in ${edu.field}`}</p>
+                    <p className="text-gray-500 text-sm">{edu.startDate} - {edu.endDate || 'Present'}</p>
+                    <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
+                  </div>
+                )
+              ))}
+            </div>
+            
+            {data.skills.some(skill => skill) && (
+              <div>
+                <h3 className="text-xl font-bold text-[#4299E1] mb-3">Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {data.skills.map((skill, index) => (
+                    skill && (
+                      <span key={index} className="bg-[#EBF8FF] text-[#4299E1] px-3 py-1 rounded-full text-sm font-medium">
+                        {skill}
+                      </span>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {data.languages.some(language => language) && (
+              <div>
+                <h3 className="text-xl font-bold text-[#4299E1] mb-3">Languages</h3>
+                <ul className="list-disc list-
