@@ -114,13 +114,8 @@ const ResumeEditor = () => {
         if (data) {
           setTemplateData(data);
         }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-        toast({
-          title: "Error fetching template data",
-          description: errorMessage || "Failed to load template data",
-          variant: "destructive",
-        });
+      } catch (error) {
+        console.error('Error fetching template data:', error);
       }
     };
 
@@ -184,11 +179,10 @@ const ResumeEditor = () => {
               setResumeData(formattedData);
             }
           }
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        } catch (error: any) {
           toast({
             title: "Error fetching resume",
-            description: errorMessage || "Failed to load resume data",
+            description: error.message || "Failed to load resume data",
             variant: "destructive",
           });
         } finally {
@@ -421,11 +415,10 @@ const ResumeEditor = () => {
       if (id === 'new') {
         navigate('/dashboard');
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    } catch (error: any) {
       toast({
         title: "Error saving resume",
-        description: errorMessage || "Failed to save resume",
+        description: error.message || "Failed to save resume",
         variant: "destructive",
       });
     } finally {
@@ -475,11 +468,10 @@ const ResumeEditor = () => {
         title: "PDF Downloaded",
         description: "Your resume has been downloaded as a PDF.",
       });
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    } catch (error: any) {
       toast({
         title: "Error downloading PDF",
-        description: errorMessage || "Failed to generate PDF",
+        description: error.message || "Failed to generate PDF",
         variant: "destructive",
       });
     } finally {
@@ -810,6 +802,7 @@ const ResumeEditor = () => {
     );
   };
 
+  // Placeholder for premium templates - actual implementations below are simplified
   const CreativeTemplate = ({ data }: { data: ResumeDataType }) => {
     return (
       <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
@@ -880,294 +873,4 @@ const ResumeEditor = () => {
             {data.languages.some(language => language) && (
               <div>
                 <h3 className="text-xl font-bold text-[#4299E1] mb-3">Languages</h3>
-                <ul className="list-disc list-inside">
-                  {data.languages.map((language, index) => (
-                    language && (
-                      <li key={index} className="text-gray-700">
-                        {language}
-                      </li>
-                    )
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const CorporateTemplate = ({ data }: { data: ResumeDataType }): JSX.Element => {
-    return (
-      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
-        <div className="bg-[#2D3748] text-white p-6">
-          <h2 className="text-2xl font-bold">{data.personalInfo.fullName || 'Your Name'}</h2>
-          <p className="text-white/90">{data.personalInfo.title || 'Professional Title'}</p>
-          <div className="flex flex-wrap gap-3 mt-2 text-sm">
-            {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
-            {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
-            {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
-          </div>
-        </div>
-        
-        <div className="p-6">
-          {data.personalInfo.summary && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Professional Summary</h3>
-              <p className="text-gray-700">{data.personalInfo.summary}</p>
-            </div>
-          )}
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Experience</h3>
-            {data.experience.map((exp) => (
-              exp.company && (
-                <div key={exp.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{exp.position}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {exp.startDate} - {exp.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#2D3748]">{exp.company}</p>
-                  <p className="text-gray-700 text-sm mt-1">{exp.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
-            {data.education.map((edu) => (
-              edu.school && (
-                <div key={edu.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{edu.school}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {edu.startDate} - {edu.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#2D3748]">{edu.degree} {edu.field && `in ${edu.field}`}</p>
-                  <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          {data.skills.some(skill => skill) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.skills.map((skill, index) => (
-                  skill && (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
-                      {skill}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {data.languages.some(language => language) && (
-            <div>
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Languages</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.languages.map((language, index) => (
-                  language && (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
-                      {language}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const DigitalTemplate = ({ data }: { data: ResumeDataType }): JSX.Element => {
-    return (
-      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
-        <div className="bg-gradient-to-r from-[#6B46C1] to-[#9F7AEA] text-white p-6">
-          <h2 className="text-2xl font-bold">{data.personalInfo.fullName || 'Your Name'}</h2>
-          <p className="text-white/90">{data.personalInfo.title || 'Professional Title'}</p>
-          <div className="flex flex-wrap gap-3 mt-2 text-sm">
-            {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
-            {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
-            {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
-          </div>
-        </div>
-        
-        <div className="p-6">
-          {data.personalInfo.summary && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">About Me</h3>
-              <p className="text-gray-700">{data.personalInfo.summary}</p>
-            </div>
-          )}
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Experience</h3>
-            {data.experience.map((exp) => (
-              exp.company && (
-                <div key={exp.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{exp.position}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {exp.startDate} - {exp.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#6B46C1]">{exp.company}</p>
-                  <p className="text-gray-700 text-sm mt-1">{exp.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
-            {data.education.map((edu) => (
-              edu.school && (
-                <div key={edu.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{edu.school}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {edu.startDate} - {edu.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#6B46C1]">{edu.degree} {edu.field && `in ${edu.field}`}</p>
-                  <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          {data.skills.some(skill => skill) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.skills.map((skill, index) => (
-                  skill && (
-                    <span key={index} className="bg-[#EBF8FF] text-[#4299E1] px-3 py-1 rounded-full text-sm font-medium">
-                      {skill}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {data.languages.some(language => language) && (
-            <div>
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Languages</h3>
-              <ul className="list-disc list-inside">
-                {data.languages.map((language, index) => (
-                  language && (
-                    <li key={index} className="text-gray-700">
-                      {language}
-                    </li>
-                  )
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const ExecutiveTemplate = ({ data }: { data: ResumeDataType }): JSX.Element => {
-    return (
-      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
-        <div className="bg-[#1A202C] text-white p-6">
-          <h2 className="text-2xl font-bold">{data.personalInfo.fullName || 'Your Name'}</h2>
-          <p className="text-white/90">{data.personalInfo.title || 'Professional Title'}</p>
-          <div className="flex flex-wrap gap-3 mt-2 text-sm">
-            {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
-            {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
-            {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
-          </div>
-        </div>
-        
-        <div className="p-6">
-          {data.personalInfo.summary && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Professional Summary</h3>
-              <p className="text-gray-700">{data.personalInfo.summary}</p>
-            </div>
-          )}
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Experience</h3>
-            {data.experience.map((exp) => (
-              exp.company && (
-                <div key={exp.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{exp.position}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {exp.startDate} - {exp.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#1A202C]">{exp.company}</p>
-                  <p className="text-gray-700 text-sm mt-1">{exp.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
-            {data.education.map((edu) => (
-              edu.school && (
-                <div key={edu.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{edu.school}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {edu.startDate} - {edu.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-[#1A202C]">{edu.degree} {edu.field && `in ${edu.field}`}</p>
-                  <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-
-          {data.skills.some(skill => skill) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.skills.map((skill, index) => (
-                  skill && (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
-                      {skill}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-
-          {data.languages.some(language => language) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Languages</h3>
-              <ul className="list-disc list-inside">
-                {data.languages.map((language, index) => (
-                  language && (
-                    <li key={index} className="text-gray-700">
-                      {language}
-                    </li>
-                  )
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-export default ResumeEditor;
+                <ul className="list-disc list-
