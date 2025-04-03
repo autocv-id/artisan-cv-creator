@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -45,6 +46,37 @@ const initialResumeData = {
 // Type definition for the resume data structure
 type ResumeDataType = typeof initialResumeData;
 
+// Type for the resume content from Supabase
+interface ResumeContent {
+  personalInfo?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    title?: string;
+    summary?: string;
+  };
+  experience?: Array<{
+    id: number;
+    company: string;
+    position: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  education?: Array<{
+    id: number;
+    school: string;
+    degree: string;
+    field: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  skills?: string[];
+  languages?: string[];
+}
+
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
@@ -76,30 +108,31 @@ const ResumeEditor = () => {
           if (data) {
             setResumeTitle(data.title || 'Untitled Resume');
             
-            // Make sure content is an object and properly structured before setting it
-            if (data.content && typeof data.content === 'object') {
-              // Check if the data has the expected structure before assigning
-              const formattedData = {
+            // Type assertion to help TypeScript understand the structure
+            const content = data.content as ResumeContent;
+            
+            // Make sure content is an object before setting it
+            if (content && typeof content === 'object' && !Array.isArray(content)) {
+              const formattedData: ResumeDataType = {
                 personalInfo: {
-                  fullName: '',
-                  email: '',
-                  phone: '',
-                  location: '',
-                  title: '',
-                  summary: '',
-                  ...(data.content.personalInfo || {}),
+                  fullName: content.personalInfo?.fullName || '',
+                  email: content.personalInfo?.email || '',
+                  phone: content.personalInfo?.phone || '',
+                  location: content.personalInfo?.location || '',
+                  title: content.personalInfo?.title || '',
+                  summary: content.personalInfo?.summary || '',
                 },
-                experience: Array.isArray(data.content.experience) 
-                  ? data.content.experience 
+                experience: Array.isArray(content.experience) && content.experience.length > 0 
+                  ? content.experience 
                   : initialResumeData.experience,
-                education: Array.isArray(data.content.education)
-                  ? data.content.education
+                education: Array.isArray(content.education) && content.education.length > 0
+                  ? content.education
                   : initialResumeData.education,
-                skills: Array.isArray(data.content.skills)
-                  ? data.content.skills
+                skills: Array.isArray(content.skills) && content.skills.length > 0
+                  ? content.skills
                   : initialResumeData.skills,
-                languages: Array.isArray(data.content.languages)
-                  ? data.content.languages
+                languages: Array.isArray(content.languages) && content.languages.length > 0
+                  ? content.languages
                   : initialResumeData.languages,
               };
               
