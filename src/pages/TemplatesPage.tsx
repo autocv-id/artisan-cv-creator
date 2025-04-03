@@ -1,153 +1,214 @@
-import React, { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import Layout from '@/components/layout/Layout';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
-import { templates } from '../data/templates';
-import { Template } from '../types/template';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { LockIcon } from 'lucide-react';
 
-// Simulasi status pengguna (dalam implementasi nyata, ini akan berasal dari sistem autentikasi)
-const isPremiumUser = false;
+// Template categories
+const categories = [
+  "All Templates",
+  "Professional",
+  "Modern",
+  "Creative",
+  "Simple"
+];
 
-const TemplatesPage: React.FC = () => {
-  const [filter, setFilter] = useState<'all' | 'free' | 'premium'>('all');
-  
-  const filteredTemplates = templates.filter(template => {
-    if (filter === 'all') return true;
-    return template.category === filter;
-  });
-
-  const handleFilterChange = (newFilter: 'all' | 'free' | 'premium') => {
-    setFilter(newFilter);
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">Resume Templates</h1>
-      
-      <div className="flex justify-center mb-8">
-        <div className="inline-flex rounded-md shadow-sm" role="group">
-          <button
-            type="button"
-            onClick={() => handleFilterChange('all')}
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-              filter === 'all' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            All Templates
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFilterChange('free')}
-            className={`px-4 py-2 text-sm font-medium ${
-              filter === 'free' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            Free
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFilterChange('premium')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-              filter === 'premium' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            Premium
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map((template) => (
-          <TemplateCard 
-            key={template.id} 
-            template={template} 
-            isPremiumUser={isPremiumUser} 
-          />
-        ))}
-      </div>
-      
-      {!isPremiumUser && (
-        <div className="mt-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-2">Upgrade to Premium</h2>
-          <p className="mb-4">Get access to all premium templates and exclusive features to create standout resumes.</p>
-          <button 
-            className="bg-white text-indigo-600 px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors"
-            onClick={() => alert('Upgrade functionality would go here')}
-          >
-            Upgrade Now
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface TemplateCardProps {
-  template: Template;
-  isPremiumUser: boolean;
+// Template interface matching database structure
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+  is_premium: boolean;
+  thumbnail: string;
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template, isPremiumUser }) => {
-  const isPremium = template.category === 'premium';
-  const isLocked = isPremium && !isPremiumUser;
+// User profile interface
+interface Profile {
+  subscription_status: string;
+}
+
+const TemplatesPage = () => {
+  const [activeCategory, setActiveCategory] = useState("All Templates");
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Fetch templates from Supabase
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('templates')
+          .select('*')
+          .order('name');
+
+        if (error) throw error;
+        setTemplates(data || []);
+      } catch (error: any) {
+        toast({
+          title: "Error fetching templates",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTemplates();
+  }, [toast]);
+
+  // Fetch user profile to determine subscription status
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) {
+        setUserProfile(null);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+        setUserProfile(data);
+      } catch (error: any) {
+        console.error('Error fetching user profile:', error.message);
+        // Don't show toast for this as it's not critical to the user experience
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
+  const isPaidUser = userProfile?.subscription_status === 'paid';
   
-  return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-      <div className="relative">
-        <img 
-          src={template.thumbnail} 
-          alt={template.name} 
-          className={`w-full h-48 object-cover ${isLocked ? 'filter blur-sm' : ''}`}
-          onError={(e) => {
-            // Fallback image if template image fails to load
-            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=Template';
-          }}
-        />
-        
-        {isPremium && (
-          <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-            PREMIUM
-          </span>
-        )}
-        
-        {isLocked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="text-white text-center p-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <p className="font-medium">Premium Template</p>
-              <p className="text-sm">Upgrade to access</p>
-            </div>
+  const filteredTemplates = activeCategory === "All Templates" 
+    ? templates 
+    : templates.filter(template => template.category === activeCategory);
+
+  const handleTemplateSelection = (template: Template) => {
+    if (template.is_premium && !isPaidUser) {
+      toast({
+        title: "Premium Template",
+        description: "You need a paid subscription to use this template.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // If free template or paid user, proceed to editor
+    // The template ID will be passed in the URL
+    return `/editor/new?template=${template.id}`;
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 md:px-6 py-12">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-resume-primary"></div>
           </div>
-        )}
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 md:px-6 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl md:text-5xl font-bold text-resume-primary mb-4">Resume Templates</h1>
+          <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+            Choose from our collection of professionally designed templates optimized to pass Applicant Tracking Systems
+          </p>
+          {!user && (
+            <div className="mt-4">
+              <Link to="/login" className="text-resume-primary underline">
+                Sign in to access premium templates
+              </Link>
+            </div>
+          )}
+          {user && !isPaidUser && (
+            <div className="mt-4">
+              <Link to="/pricing" className="text-resume-primary underline">
+                Upgrade to access premium templates
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-8">
+          <Tabs defaultValue="All Templates" className="w-full">
+            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+              {categories.map((category) => (
+                <TabsTrigger
+                  key={category}
+                  value={category}
+                  onClick={() => setActiveCategory(category)}
+                  className="data-[state=active]:bg-resume-primary data-[state=active]:text-white"
+                >
+                  {category}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredTemplates.map((template) => (
+            <div 
+              key={template.id} 
+              className="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all animate-zoom"
+            >
+              <div className="relative">
+                <img 
+                  src={template.thumbnail}
+                  alt={`${template.name} template`}
+                  className="w-full object-cover h-80"
+                />
+                {template.is_premium && (
+                  <Badge variant="secondary" className="absolute top-4 right-4 bg-amber-400 text-amber-900 border-none">
+                    <LockIcon className="h-3 w-3 mr-1" /> PREMIUM
+                  </Badge>
+                )}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                  {template.is_premium && !isPaidUser ? (
+                    <Link to="/pricing">
+                      <Button className="bg-white text-resume-primary hover:bg-white/90">
+                        Upgrade to Use
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to={`/editor/new?template=${template.id}`}>
+                      <Button className="bg-white text-resume-primary hover:bg-white/90">
+                        Use This Template
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="text-xl font-semibold text-gray-800">{template.name}</h3>
+                <p className="text-gray-600 mt-1">{template.category}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      
-      <div className="p-4">
-        <h3 className="font-bold text-lg mb-1">{template.name}</h3>
-        <p className="text-gray-600 text-sm mb-4">{template.description}</p>
-        
-        {isLocked ? (
-          <button 
-            className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors"
-            onClick={() => alert('Please upgrade to premium to use this template')}
-          >
-            Unlock Template
-          </button>
-        ) : (
-          <Link 
-            to={`/editor/${template.id}`}
-            className="block w-full text-center bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Use This Template
-          </Link>
-        )}
-      </div>
-    </div>
+    </Layout>
   );
 };
 
