@@ -9,33 +9,11 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          created_at: string
-          id: string
-          subscription_status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          subscription_status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          subscription_status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       resumes: {
         Row: {
           content: Json
           created_at: string
           id: string
-          template_id: string
           title: string
           updated_at: string
           user_id: string
@@ -44,7 +22,6 @@ export type Database = {
           content?: Json
           created_at?: string
           id?: string
-          template_id?: string
           title?: string
           updated_at?: string
           user_id: string
@@ -53,37 +30,9 @@ export type Database = {
           content?: Json
           created_at?: string
           id?: string
-          template_id?: string
           title?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      templates: {
-        Row: {
-          category: string
-          created_at: string
-          id: string
-          is_premium: boolean
-          name: string
-          thumbnail: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          id: string
-          is_premium?: boolean
-          name: string
-          thumbnail: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          id?: string
-          is_premium?: boolean
-          name?: string
-          thumbnail?: string
         }
         Relationships: []
       }
