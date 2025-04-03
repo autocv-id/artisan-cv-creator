@@ -1,5 +1,6 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,7 +18,10 @@ import {
   Eye 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 // Initial resume data structure
 const initialResumeData = {
@@ -43,7 +47,50 @@ const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
   const [currentTemplate, setCurrentTemplate] = useState('professional');
+  const [isLoading, setIsLoading] = useState(false);
+  const [resumeTitle, setResumeTitle] = useState('Untitled Resume');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  // Fetch resume data if editing an existing resume
+  useEffect(() => {
+    const fetchResumeData = async () => {
+      if (id && id !== 'new' && user) {
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('resumes')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+          if (error) throw error;
+          
+          if (data) {
+            setResumeTitle(data.title);
+            if (data.content) {
+              setResumeData(data.content);
+            }
+          }
+        } catch (error: any) {
+          toast({
+            title: "Error fetching resume",
+            description: error.message || "Failed to load resume data",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchResumeData();
+  }, [id, user, toast]);
 
   // Handle personal info changes
   const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -194,21 +241,114 @@ const ResumeEditor = () => {
   };
 
   // Handle save
-  const handleSave = () => {
-    // This would typically save to a database
-    toast({
-      title: "Resume saved!",
-      description: "Your resume has been saved successfully.",
-    });
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Not logged in",
+        description: "Please login to save your resume",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Determine if we're creating a new resume or updating an existing one
+      if (id && id !== 'new') {
+        // Update existing resume
+        const { error } = await supabase
+          .from('resumes')
+          .update({
+            title: resumeTitle,
+            content: resumeData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Create new resume
+        const { error } = await supabase
+          .from('resumes')
+          .insert({
+            user_id: user.id,
+            title: resumeTitle,
+            content: resumeData,
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Resume saved!",
+        description: "Your resume has been saved successfully.",
+      });
+
+      // Redirect to dashboard after saving a new resume
+      if (id === 'new') {
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error saving resume",
+        description: error.message || "Failed to save resume",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Handle download PDF
-  const handleDownload = () => {
-    // This would generate and download a PDF
-    toast({
-      title: "Downloading PDF",
-      description: "Your resume is being generated and downloaded.",
-    });
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const resumeElement = document.getElementById('resume-preview');
+      if (!resumeElement) {
+        throw new Error("Preview element not found");
+      }
+
+      const canvas = await html2canvas(resumeElement, {
+        scale: 2, // Higher scale for better quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Create PDF of A4 size
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 0;
+      
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`${resumeTitle || 'resume'}.pdf`);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Your resume has been downloaded as a PDF.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error downloading PDF",
+        description: error.message || "Failed to generate PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   // Navigate to next tab
@@ -232,7 +372,7 @@ const ResumeEditor = () => {
   // Mock resume preview component
   const ResumePreview = () => {
     return (
-      <div className="border rounded-lg overflow-hidden bg-white shadow-lg">
+      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
         <div className="bg-resume-primary text-white p-6">
           <h2 className="text-2xl font-bold">{resumeData.personalInfo.fullName || 'Your Name'}</h2>
           <p>{resumeData.personalInfo.title || 'Professional Title'}</p>
@@ -320,26 +460,65 @@ const ResumeEditor = () => {
     );
   };
 
+  if (isLoading) {
+    return (
+      <Layout withFooter={false}>
+        <div className="container mx-auto px-4 md:px-6 py-12">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout withFooter={false}>
       <div className="container mx-auto px-4 md:px-6 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-resume-primary">Resume Editor</h1>
+          <div className="space-y-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-resume-primary">Resume Editor</h1>
+            <div className="flex items-center space-x-2">
+              <Input
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+                className="max-w-xs"
+                placeholder="Resume Title"
+              />
+            </div>
+          </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSave} className="flex gap-2 items-center">
-              <Save className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              onClick={handleSave} 
+              className="flex gap-2 items-center"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <div className="animate-spin h-4 w-4 border-t-2 border-primary rounded-full" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
               Save
             </Button>
-            <Link to="/preview">
-              <Button variant="outline" className="flex gap-2 items-center">
-                <Eye className="h-4 w-4" />
-                Preview
-              </Button>
-            </Link>
-            <Button onClick={handleDownload} className="bg-resume-primary hover:bg-resume-primary/90 flex gap-2 items-center">
-              <Download className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              onClick={handleDownload} 
+              className="flex gap-2 items-center"
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <div className="animate-spin h-4 w-4 border-t-2 border-primary rounded-full" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
               Download PDF
             </Button>
+            <Link to="/dashboard">
+              <Button variant="secondary" className="flex gap-2 items-center">
+                Dashboard
+              </Button>
+            </Link>
           </div>
         </div>
 
