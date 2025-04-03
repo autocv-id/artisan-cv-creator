@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -43,8 +42,11 @@ const initialResumeData = {
   languages: [''],
 };
 
+// Type definition for the resume data structure
+type ResumeDataType = typeof initialResumeData;
+
 const ResumeEditor = () => {
-  const [resumeData, setResumeData] = useState(initialResumeData);
+  const [resumeData, setResumeData] = useState<ResumeDataType>(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
   const [currentTemplate, setCurrentTemplate] = useState('professional');
   const [isLoading, setIsLoading] = useState(false);
@@ -72,9 +74,36 @@ const ResumeEditor = () => {
           if (error) throw error;
           
           if (data) {
-            setResumeTitle(data.title);
-            if (data.content) {
-              setResumeData(data.content);
+            setResumeTitle(data.title || 'Untitled Resume');
+            
+            // Make sure content is an object and properly structured before setting it
+            if (data.content && typeof data.content === 'object') {
+              // Check if the data has the expected structure before assigning
+              const formattedData = {
+                personalInfo: {
+                  fullName: '',
+                  email: '',
+                  phone: '',
+                  location: '',
+                  title: '',
+                  summary: '',
+                  ...(data.content.personalInfo || {}),
+                },
+                experience: Array.isArray(data.content.experience) 
+                  ? data.content.experience 
+                  : initialResumeData.experience,
+                education: Array.isArray(data.content.education)
+                  ? data.content.education
+                  : initialResumeData.education,
+                skills: Array.isArray(data.content.skills)
+                  ? data.content.skills
+                  : initialResumeData.skills,
+                languages: Array.isArray(data.content.languages)
+                  ? data.content.languages
+                  : initialResumeData.languages,
+              };
+              
+              setResumeData(formattedData);
             }
           }
         } catch (error: any) {
