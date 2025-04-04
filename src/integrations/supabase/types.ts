@@ -67,6 +67,8 @@ export type Database = {
           id: string
           is_premium: boolean
           name: string
+          template_html: string | null
+          template_id: string | null
           thumbnail: string
         }
         Insert: {
@@ -75,6 +77,8 @@ export type Database = {
           id: string
           is_premium?: boolean
           name: string
+          template_html?: string | null
+          template_id?: string | null
           thumbnail: string
         }
         Update: {
@@ -83,6 +87,8 @@ export type Database = {
           id?: string
           is_premium?: boolean
           name?: string
+          template_html?: string | null
+          template_id?: string | null
           thumbnail?: string
         }
         Relationships: []

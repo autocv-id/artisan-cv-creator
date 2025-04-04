@@ -5,4 +5,6 @@ export interface Template {
   category: string;
   is_premium: boolean;
   thumbnail: string;
+  template_id?: string;
+  template_html?: string;
 }

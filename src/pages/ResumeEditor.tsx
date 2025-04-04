@@ -28,8 +28,10 @@ import { Template } from '@/types/templates';
 // Import template components
 import ProfessionalTemplate from '@/components/resume/templates/ProfessionalTemplate';
 import ModernTemplate from '@/components/resume/templates/ModernTemplate';
+import ProfessionalBlueTemplate from '@/components/resume/templates/ProfessionalBlueTemplate';
+import ProfessionalUXTemplate from '@/components/resume/templates/ProfessionalUXTemplate';
 
-// Initial resume data structure
+// Initial resume data structure definition
 const initialResumeData = {
   personalInfo: {
     fullName: '',
@@ -616,6 +618,10 @@ const ResumeEditor = () => {
         return <ProfessionalTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
       case 'modern':
         return <ModernTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
+      case 'professional-blue':
+        return <ProfessionalBlueTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
+      case 'professional-ux':
+        return <ProfessionalUXTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
       default:
         return <ProfessionalTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
     }
