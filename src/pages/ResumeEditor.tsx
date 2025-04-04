@@ -1,6 +1,6 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,13 +15,18 @@ import {
   Plus, 
   Trash2, 
   Save, 
-  Eye 
+  Upload,
+  Camera
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
+// Import template components
+import ProfessionalTemplate from '@/components/resume/templates/ProfessionalTemplate';
+import ModernTemplate from '@/components/resume/templates/ModernTemplate';
 
 // Initial resume data structure
 const initialResumeData = {
@@ -32,6 +37,7 @@ const initialResumeData = {
     location: '',
     title: '',
     summary: '',
+    website: '',
   },
   experience: [
     { id: 1, company: '', position: '', startDate: '', endDate: '', description: '' }
@@ -41,6 +47,8 @@ const initialResumeData = {
   ],
   skills: [''],
   languages: [''],
+  certifications: [''],
+  awards: [''],
 };
 
 // Type definition for the resume data structure
@@ -55,6 +63,7 @@ interface ResumeContent {
     location?: string;
     title?: string;
     summary?: string;
+    website?: string;
   };
   experience?: Array<{
     id: number;
@@ -75,84 +84,193 @@ interface ResumeContent {
   }>;
   skills?: string[];
   languages?: string[];
+  certifications?: string[];
+  awards?: string[];
+}
+
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+  is_premium: boolean;
+  thumbnail: string;
 }
 
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
   const [currentTemplate, setCurrentTemplate] = useState('professional');
+  const [templateData, setTemplateData] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resumeTitle, setResumeTitle] = useState('Untitled Resume');
+  const [userSubscription, setUserSubscription] = useState('free');
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const templateId = searchParams.get('template') || 'professional';
 
-  // Fetch resume data if editing an existing resume
+  // Fetch template data, user subscription status, and resume data
   useEffect(() => {
-    const fetchResumeData = async () => {
-      if (id && id !== 'new' && user) {
-        setIsLoading(true);
-        try {
-          const { data, error } = await supabase
-            .from('resumes')
-            .select('*')
-            .eq('id', id)
-            .eq('user_id', user.id)
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch template data
+        const { data: templateData, error: templateError } = await supabase
+          .from('templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
+
+        if (templateError) {
+          console.error('Error fetching template data:', templateError);
+        } else if (templateData) {
+          setTemplateData(templateData);
+          setCurrentTemplate(templateData.id);
+        }
+
+        // Fetch user subscription status if logged in
+        if (user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('subscription_status')
+            .eq('id', user.id)
             .single();
 
-          if (error) throw error;
-          
-          if (data) {
-            setResumeTitle(data.title || 'Untitled Resume');
+          if (profileError) {
+            console.error('Error fetching user profile:', profileError);
+          } else if (profileData) {
+            setUserSubscription(profileData.subscription_status);
             
-            // Type assertion to help TypeScript understand the structure
-            const content = data.content as ResumeContent;
-            
-            // Make sure content is an object before setting it
-            if (content && typeof content === 'object' && !Array.isArray(content)) {
-              const formattedData: ResumeDataType = {
-                personalInfo: {
-                  fullName: content.personalInfo?.fullName || '',
-                  email: content.personalInfo?.email || '',
-                  phone: content.personalInfo?.phone || '',
-                  location: content.personalInfo?.location || '',
-                  title: content.personalInfo?.title || '',
-                  summary: content.personalInfo?.summary || '',
-                },
-                experience: Array.isArray(content.experience) && content.experience.length > 0 
-                  ? content.experience 
-                  : initialResumeData.experience,
-                education: Array.isArray(content.education) && content.education.length > 0
-                  ? content.education
-                  : initialResumeData.education,
-                skills: Array.isArray(content.skills) && content.skills.length > 0
-                  ? content.skills
-                  : initialResumeData.skills,
-                languages: Array.isArray(content.languages) && content.languages.length > 0
-                  ? content.languages
-                  : initialResumeData.languages,
-              };
-              
-              setResumeData(formattedData);
+            // Check if user can access this template
+            if (templateData && templateData.is_premium && profileData.subscription_status === 'free') {
+              toast({
+                title: "Premium Template",
+                description: "This template is only available with a premium subscription. Using the default template instead.",
+                variant: "destructive",
+              });
+              setCurrentTemplate('professional');
             }
           }
-        } catch (error: any) {
-          toast({
-            title: "Error fetching resume",
-            description: error.message || "Failed to load resume data",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoading(false);
         }
+
+        // Fetch resume data if editing an existing resume
+        if (id && id !== 'new' && user) {
+          try {
+            const { data, error } = await supabase
+              .from('resumes')
+              .select('*')
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .single();
+
+            if (error) throw error;
+            
+            if (data) {
+              setResumeTitle(data.title || 'Untitled Resume');
+              setCurrentTemplate(data.template_id || templateId);
+              
+              // Type assertion to help TypeScript understand the structure
+              const content = data.content as ResumeContent;
+              
+              // Make sure content is an object before setting it
+              if (content && typeof content === 'object' && !Array.isArray(content)) {
+                const formattedData: ResumeDataType = {
+                  personalInfo: {
+                    fullName: content.personalInfo?.fullName || '',
+                    email: content.personalInfo?.email || '',
+                    phone: content.personalInfo?.phone || '',
+                    location: content.personalInfo?.location || '',
+                    title: content.personalInfo?.title || '',
+                    summary: content.personalInfo?.summary || '',
+                    website: content.personalInfo?.website || '',
+                  },
+                  experience: Array.isArray(content.experience) && content.experience.length > 0 
+                    ? content.experience 
+                    : initialResumeData.experience,
+                  education: Array.isArray(content.education) && content.education.length > 0
+                    ? content.education
+                    : initialResumeData.education,
+                  skills: Array.isArray(content.skills) && content.skills.length > 0
+                    ? content.skills
+                    : initialResumeData.skills,
+                  languages: Array.isArray(content.languages) && content.languages.length > 0
+                    ? content.languages
+                    : initialResumeData.languages,
+                  certifications: Array.isArray(content.certifications) && content.certifications.length > 0
+                    ? content.certifications
+                    : initialResumeData.certifications || [''],
+                  awards: Array.isArray(content.awards) && content.awards.length > 0
+                    ? content.awards
+                    : initialResumeData.awards || [''],
+                };
+                
+                setResumeData(formattedData);
+              }
+            }
+          } catch (error: any) {
+            toast({
+              title: "Error fetching resume",
+              description: error.message || "Failed to load resume data",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (error: any) {
+        toast({
+          title: "Error loading data",
+          description: error.message || "Failed to load necessary data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchResumeData();
-  }, [id, user, toast]);
+    fetchData();
+  }, [id, user, toast, templateId]);
+
+  // Handle photo upload
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create a temporary URL for preview
+      const objectUrl = URL.createObjectURL(file);
+      setPhotoUrl(objectUrl);
+
+      // TODO: For production, you would upload this to Supabase storage
+      // const { data, error } = await supabase.storage
+      //   .from('profile-photos')
+      //   .upload(`${user?.id}/${Date.now()}_${file.name}`, file);
+      
+      toast({
+        title: "Photo added",
+        description: "Your photo has been added to the resume.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload photo",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Handle personal info changes
   const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -302,6 +420,66 @@ const ResumeEditor = () => {
     }
   };
 
+  // Handle certifications changes
+  const handleCertificationChange = (index: number, value: string) => {
+    const updatedCertifications = [...(resumeData.certifications || [''])];
+    updatedCertifications[index] = value;
+    setResumeData({ ...resumeData, certifications: updatedCertifications });
+  };
+
+  // Add new certification
+  const addCertification = () => {
+    setResumeData({
+      ...resumeData,
+      certifications: [...(resumeData.certifications || ['']), ''],
+    });
+  };
+
+  // Remove certification
+  const removeCertification = (index: number) => {
+    if ((resumeData.certifications || []).length > 1) {
+      const updatedCertifications = [...(resumeData.certifications || [''])];
+      updatedCertifications.splice(index, 1);
+      setResumeData({ ...resumeData, certifications: updatedCertifications });
+    } else {
+      toast({
+        title: "Can't remove all certifications",
+        description: "You need at least one certification entry.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle awards changes
+  const handleAwardChange = (index: number, value: string) => {
+    const updatedAwards = [...(resumeData.awards || [''])];
+    updatedAwards[index] = value;
+    setResumeData({ ...resumeData, awards: updatedAwards });
+  };
+
+  // Add new award
+  const addAward = () => {
+    setResumeData({
+      ...resumeData,
+      awards: [...(resumeData.awards || ['']), ''],
+    });
+  };
+
+  // Remove award
+  const removeAward = (index: number) => {
+    if ((resumeData.awards || []).length > 1) {
+      const updatedAwards = [...(resumeData.awards || [''])];
+      updatedAwards.splice(index, 1);
+      setResumeData({ ...resumeData, awards: updatedAwards });
+    } else {
+      toast({
+        title: "Can't remove all awards",
+        description: "You need at least one award entry.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle save
   const handleSave = async () => {
     if (!user) {
@@ -323,6 +501,7 @@ const ResumeEditor = () => {
           .update({
             title: resumeTitle,
             content: resumeData,
+            template_id: currentTemplate,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id)
@@ -337,6 +516,7 @@ const ResumeEditor = () => {
             user_id: user.id,
             title: resumeTitle,
             content: resumeData,
+            template_id: currentTemplate,
           });
 
         if (error) throw error;
@@ -372,10 +552,11 @@ const ResumeEditor = () => {
       }
 
       const canvas = await html2canvas(resumeElement, {
-        scale: 2, // Higher scale for better quality
+        scale: 3, // Higher scale for better quality
         logging: false,
         useCORS: true,
         allowTaint: true,
+        backgroundColor: '#ffffff', // Ensure white background
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -415,7 +596,7 @@ const ResumeEditor = () => {
 
   // Navigate to next tab
   const nextTab = () => {
-    const tabs = ['personalInfo', 'experience', 'education', 'skills'];
+    const tabs = ['personalInfo', 'experience', 'education', 'skills', 'additional'];
     const currentIndex = tabs.indexOf(activeTab);
     if (currentIndex < tabs.length - 1) {
       setActiveTab(tabs[currentIndex + 1]);
@@ -424,102 +605,23 @@ const ResumeEditor = () => {
 
   // Navigate to previous tab
   const prevTab = () => {
-    const tabs = ['personalInfo', 'experience', 'education', 'skills'];
+    const tabs = ['personalInfo', 'experience', 'education', 'skills', 'additional'];
     const currentIndex = tabs.indexOf(activeTab);
     if (currentIndex > 0) {
       setActiveTab(tabs[currentIndex - 1]);
     }
   };
 
-  // Mock resume preview component
+  // Resume preview component
   const ResumePreview = () => {
-    return (
-      <div id="resume-preview" className="border rounded-lg overflow-hidden bg-white shadow-lg">
-        <div className="bg-resume-primary text-white p-6">
-          <h2 className="text-2xl font-bold">{resumeData.personalInfo.fullName || 'Your Name'}</h2>
-          <p>{resumeData.personalInfo.title || 'Professional Title'}</p>
-          <div className="flex flex-wrap gap-3 mt-2 text-sm">
-            <span>{resumeData.personalInfo.email}</span>
-            <span>{resumeData.personalInfo.phone}</span>
-            <span>{resumeData.personalInfo.location}</span>
-          </div>
-        </div>
-        <div className="p-6">
-          {resumeData.personalInfo.summary && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Summary</h3>
-              <p className="text-gray-700">{resumeData.personalInfo.summary}</p>
-            </div>
-          )}
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Experience</h3>
-            {resumeData.experience.map((exp) => (
-              exp.company && (
-                <div key={exp.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{exp.position}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {exp.startDate} - {exp.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-resume-primary">{exp.company}</p>
-                  <p className="text-gray-700 text-sm mt-1">{exp.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Education</h3>
-            {resumeData.education.map((edu) => (
-              edu.school && (
-                <div key={edu.id} className="mb-4">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">{edu.school}</h4>
-                    <span className="text-gray-600 text-sm">
-                      {edu.startDate} - {edu.endDate || 'Present'}
-                    </span>
-                  </div>
-                  <p className="text-resume-primary">{edu.degree} {edu.field && `in ${edu.field}`}</p>
-                  <p className="text-gray-700 text-sm mt-1">{edu.description}</p>
-                </div>
-              )
-            ))}
-          </div>
-          
-          {resumeData.skills.some(skill => skill) && (
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {resumeData.skills.map((skill, index) => (
-                  skill && (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
-                      {skill}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {resumeData.languages.some(language => language) && (
-            <div>
-              <h3 className="text-lg font-semibold border-b border-gray-200 pb-1 mb-2">Languages</h3>
-              <div className="flex flex-wrap gap-2">
-                {resumeData.languages.map((language, index) => (
-                  language && (
-                    <span key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
-                      {language}
-                    </span>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    switch (currentTemplate) {
+      case 'professional':
+        return <ProfessionalTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
+      case 'modern':
+        return <ModernTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
+      default:
+        return <ProfessionalTemplate resumeData={resumeData} photoUrl={photoUrl || undefined} />;
+    }
   };
 
   if (isLoading) {
@@ -547,6 +649,11 @@ const ResumeEditor = () => {
                 className="max-w-xs"
                 placeholder="Resume Title"
               />
+              {templateData && (
+                <Badge variant="outline" className="ml-2 text-sm">
+                  Template: {templateData.name}
+                </Badge>
+              )}
             </div>
           </div>
           <div className="flex gap-2">
@@ -588,7 +695,7 @@ const ResumeEditor = () => {
           {/* Editor Section */}
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid grid-cols-4 mb-4">
+              <TabsList className="grid grid-cols-5 mb-4">
                 <TabsTrigger value="personalInfo" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
                   Personal
                 </TabsTrigger>
@@ -601,11 +708,42 @@ const ResumeEditor = () => {
                 <TabsTrigger value="skills" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
                   Skills
                 </TabsTrigger>
+                <TabsTrigger value="additional" className="data-[state=active]:bg-resume-primary data-[state=active]:text-white">
+                  Additional
+                </TabsTrigger>
               </TabsList>
 
+              {/* Personal Info Tab */}
               <TabsContent value="personalInfo" className="animate-fade-in">
                 <Card>
                   <CardContent className="pt-6 space-y-4">
+                    <div className="flex justify-center mb-4">
+                      <div className="relative">
+                        <div className="w-32 h-32 bg-gray-200 rounded-sm flex items-center justify-center overflow-hidden">
+                          {photoUrl ? (
+                            <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                          ) : (
+                            <Camera className="w-10 h-10 text-gray-400" />
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                          accept="image/*"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute bottom-0 right-0"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="fullName">Full Name</Label>
@@ -653,15 +791,27 @@ const ResumeEditor = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input 
-                        id="location" 
-                        name="location" 
-                        value={resumeData.personalInfo.location} 
-                        onChange={handlePersonalInfoChange}
-                        placeholder="New York, NY" 
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Input 
+                          id="location" 
+                          name="location" 
+                          value={resumeData.personalInfo.location} 
+                          onChange={handlePersonalInfoChange}
+                          placeholder="New York, NY" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="website">Website</Label>
+                        <Input 
+                          id="website" 
+                          name="website" 
+                          value={resumeData.personalInfo.website || ''} 
+                          onChange={handlePersonalInfoChange}
+                          placeholder="www.example.com" 
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -685,6 +835,7 @@ const ResumeEditor = () => {
                 </div>
               </TabsContent>
 
+              {/* Experience Tab */}
               <TabsContent value="experience" className="animate-fade-in">
                 <Card>
                   <CardContent className="pt-6">
@@ -754,9 +905,12 @@ const ResumeEditor = () => {
                               id={`description-${exp.id}`}
                               value={exp.description}
                               onChange={(e) => handleExperienceChange(exp.id, 'description', e.target.value)}
-                              placeholder="Describe your responsibilities and achievements"
-                              rows={3}
+                              placeholder="Describe your responsibilities and achievements. Use new lines for bullet points."
+                              rows={4}
                             />
+                            <p className="text-xs text-gray-500">
+                              Tip: Each line will be displayed as a bullet point in the resume.
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -784,6 +938,7 @@ const ResumeEditor = () => {
                 </div>
               </TabsContent>
 
+              {/* Education Tab */}
               <TabsContent value="education" className="animate-fade-in">
                 <Card>
                   <CardContent className="pt-6">
@@ -895,6 +1050,7 @@ const ResumeEditor = () => {
                 </div>
               </TabsContent>
 
+              {/* Skills Tab */}
               <TabsContent value="skills" className="animate-fade-in">
                 <Card>
                   <CardContent className="pt-6">
@@ -961,6 +1117,85 @@ const ResumeEditor = () => {
                     </div>
                   </CardContent>
                 </Card>
+                <div className="flex justify-between mt-4">
+                  <Button variant="outline" onClick={prevTab} className="flex gap-2 items-center">
+                    <ArrowLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button onClick={nextTab} className="bg-resume-primary hover:bg-resume-primary/90 flex gap-2 items-center">
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* Additional Tab */}
+              <TabsContent value="additional" className="animate-fade-in">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-4">Certifications</h3>
+                      {(resumeData.certifications || ['']).map((certification, index) => (
+                        <div key={index} className="flex gap-2 mb-2">
+                          <Input 
+                            value={certification}
+                            onChange={(e) => handleCertificationChange(index, e.target.value)}
+                            placeholder="Add a certification (e.g., AWS Certified, PMP)"
+                          />
+                          {(resumeData.certifications || []).length > 1 && (
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => removeCertification(index)}
+                              className="text-red-500 hover:text-red-700 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button 
+                        variant="outline" 
+                        className="mt-2 flex gap-2 items-center"
+                        onClick={addCertification}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Certification
+                      </Button>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Awards & Activities</h3>
+                      {(resumeData.awards || ['']).map((award, index) => (
+                        <div key={index} className="flex gap-2 mb-2">
+                          <Input 
+                            value={award}
+                            onChange={(e) => handleAwardChange(index, e.target.value)}
+                            placeholder="Add an award or activity"
+                          />
+                          {(resumeData.awards || []).length > 1 && (
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => removeAward(index)}
+                              className="text-red-500 hover:text-red-700 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button 
+                        variant="outline" 
+                        className="mt-2 flex gap-2 items-center"
+                        onClick={addAward}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Award/Activity
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
                 <div className="flex justify-start mt-4">
                   <Button variant="outline" onClick={prevTab} className="flex gap-2 items-center">
                     <ArrowLeft className="h-4 w-4" />
@@ -974,7 +1209,9 @@ const ResumeEditor = () => {
           {/* Resume Preview */}
           <div className="hidden lg:block sticky top-24 h-[calc(100vh-140px)] overflow-auto">
             <h2 className="text-xl font-semibold mb-4">Preview</h2>
-            <ResumePreview />
+            <div id="resume-preview" className="border rounded-lg overflow-hidden shadow-lg">
+              <ResumePreview />
+            </div>
           </div>
         </div>
       </div>
