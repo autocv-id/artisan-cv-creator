@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -8,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Template } from '@/types/templates';
 
 // Import template components
 import ProfessionalTemplate from '@/components/resume/templates/ProfessionalTemplate';
@@ -88,14 +89,6 @@ interface ResumeContent {
   awards?: string[];
 }
 
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  is_premium: boolean;
-  thumbnail: string;
-}
-
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(initialResumeData);
   const [activeTab, setActiveTab] = useState('personalInfo');
@@ -130,7 +123,7 @@ const ResumeEditor = () => {
         if (templateError) {
           console.error('Error fetching template data:', templateError);
         } else if (templateData) {
-          setTemplateData(templateData);
+          setTemplateData(templateData as Template);
           setCurrentTemplate(templateData.id);
         }
 
@@ -173,7 +166,11 @@ const ResumeEditor = () => {
             
             if (data) {
               setResumeTitle(data.title || 'Untitled Resume');
-              setCurrentTemplate(data.template_id || templateId);
+              
+              // Check if template_id exists in the data
+              if ('template_id' in data) {
+                setCurrentTemplate(data.template_id || templateId);
+              }
               
               // Type assertion to help TypeScript understand the structure
               const content = data.content as ResumeContent;

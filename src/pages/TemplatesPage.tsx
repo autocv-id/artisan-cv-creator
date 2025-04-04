@@ -9,15 +9,7 @@ import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-
-// Template type definition
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  is_premium: boolean;
-  thumbnail: string;
-}
+import { Template } from '@/types/templates';
 
 // Categories for templates
 const categories = [
@@ -52,7 +44,7 @@ const TemplatesPage = () => {
         if (templatesError) throw templatesError;
         
         if (templatesData) {
-          setTemplates(templatesData);
+          setTemplates(templatesData as Template[]);
         }
         
         // Fetch user subscription status if logged in
