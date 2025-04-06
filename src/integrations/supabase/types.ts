@@ -98,7 +98,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_template_by_id: {
+        Args: {
+          template_id: string
+        }
+        Returns: {
+          id: string
+          name: string
+          category: string
+          is_premium: boolean
+          thumbnail: string
+          template_html: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

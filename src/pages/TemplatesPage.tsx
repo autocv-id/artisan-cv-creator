@@ -20,21 +20,8 @@ const categories = [
   "ATS-Optimized"
 ];
 
-// Import template thumbnail images
-import alphaThumb from '../assets/templates/alpha.jpg';
-
-
-// Predefined templates data (for initial state before fetching from supabase)
-const initialTemplates: Template[] = [
-  {
-    id: 'alpha',
-    name: 'Alpha',
-    description: 'Clean and professional template suitable for most industries',
-    category: 'Professional',
-    is_premium: false,
-    thumbnail: alphaThumb
-  }
-];
+// Default empty state for templates
+const initialTemplates: Template[] = [];
 
 const TemplatesPage = () => {
   const [activeCategory, setActiveCategory] = useState("All Templates");
@@ -65,9 +52,7 @@ const TemplatesPage = () => {
           }
         }
         
-        // Note: We're using predefined template data instead of fetching from supabase
-        // You can uncomment this section if you want to fetch from supabase
-        /*
+        // Fetch templates from Supabase
         const { data: templatesData, error: templatesError } = await supabase
           .from('templates')
           .select('*')
@@ -78,12 +63,6 @@ const TemplatesPage = () => {
         if (templatesData) {
           setTemplates(templatesData as Template[]);
         }
-        */
-        
-        // Simulate API delay
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 500);
         
       } catch (error: unknown) {
         const errorWithMessage = error as { message?: string };
@@ -92,6 +71,7 @@ const TemplatesPage = () => {
           description: errorWithMessage.message || "Failed to load templates",
           variant: "destructive",
         });
+      } finally {
         setIsLoading(false);
       }
     };

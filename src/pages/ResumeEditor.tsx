@@ -240,13 +240,25 @@ const ResumeEditor = () => {
       try {
         // Fetch template data
         const { data: templateData, error: templateError } = await supabase
-          .from('templates')
-          .select('*')
-          .eq('id', templateId)
+          .rpc('get_template_by_id', { template_id: templateId })
           .single();
 
         if (templateError) {
           console.error('Error fetching template data:', templateError);
+          
+          // Fallback to direct query if RPC fails
+          const { data: directTemplateData, error: directError } = await supabase
+            .from('templates')
+            .select('*')
+            .eq('id', templateId)
+            .single();
+            
+          if (directError) {
+            console.error('Error with direct template query:', directError);
+          } else if (directTemplateData) {
+            setTemplateData(directTemplateData as Template);
+            setCurrentTemplate(directTemplateData.id);
+          }
         } else if (templateData) {
           setTemplateData(templateData as Template);
           setCurrentTemplate(templateData.id);
@@ -819,7 +831,7 @@ const ResumeEditor = () => {
       <Layout withFooter={false}>
         <div className="container mx-auto px-4 md:px-6 py-12">
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
           </div>
         </div>
       </Layout>

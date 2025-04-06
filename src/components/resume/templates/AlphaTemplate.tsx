@@ -252,4 +252,4 @@ const AlphaTemplate: React.FC<AlphaTemplateProps> = ({
   );
 };
 
-export default AlphaTemplate; 
+export default AlphaTemplate;
