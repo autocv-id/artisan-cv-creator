@@ -61,7 +61,13 @@ const TemplatesPage = () => {
         if (templatesError) throw templatesError;
         
         if (templatesData) {
-          setTemplates(templatesData as Template[]);
+          // Transform thumbnail URLs to use Supabase storage
+          const processedTemplates = templatesData.map(template => ({
+            ...template,
+            thumbnail: supabase.storage.from('assets').getPublicUrl(template.thumbnail).data.publicUrl
+          }));
+          
+          setTemplates(processedTemplates as Template[]);
         }
         
       } catch (error: unknown) {
