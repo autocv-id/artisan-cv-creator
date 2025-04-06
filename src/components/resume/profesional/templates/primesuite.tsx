@@ -46,13 +46,13 @@ interface ResumeDataType {
   };
 }
 
-interface AlphaTemplateProps {
+interface PrimeSuiteTemplateProps {
   resumeData: ResumeDataType;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
 }
 
-const AlphaTemplate: React.FC<AlphaTemplateProps> = ({ 
+const PrimeSuiteTemplate: React.FC<PrimeSuiteTemplateProps> = ({ 
   resumeData, 
   isEditable = false,
   onSectionToggle 
@@ -144,7 +144,7 @@ const AlphaTemplate: React.FC<AlphaTemplateProps> = ({
         <div className="mb-6 relative group">
           {renderSectionToggle('expertise', sections.expertise)}
           <h2 className="text-lg font-bold uppercase border-b border-gray-300 pb-1 mb-3">
-            AREA OF EXPERTISE
+            AREA OF EXPERTISE PRIMESUITE
           </h2>
           {expertiseColumns()}
         </div>
@@ -252,4 +252,4 @@ const AlphaTemplate: React.FC<AlphaTemplateProps> = ({
   );
 };
 
-export default AlphaTemplate;
+export default PrimeSuiteTemplate; 

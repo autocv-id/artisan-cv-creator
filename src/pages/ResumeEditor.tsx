@@ -21,10 +21,10 @@ import ReactDOM from 'react-dom/client';
 import React from 'react';
 
 // Import template components
-import AlphaTemplate from '@/components/resume/templates/AlphaTemplate';
-import BravoTemplate from '@/components/resume/templates/BravoTemplate';
-import CharlieTemplate from '@/components/resume/templates/CharlieTemplate';
-import DeltaTemplate from '@/components/resume/templates/DeltaTemplate';
+import PrimeSuiteTemplate from '@/components/resume/profesional/templates/primesuite';
+import ExecutiveEdge from '@/components/resume/profesional/templates/ExecutiveEdge';
+import CorporateBlue from '@/components/resume/profesional/templates/CorporateBlue';
+import FormalFocus from '@/components/resume/profesional/templates/FormalFocus';
 
 // Data dummy untuk template
 const dummyResumeData = {
@@ -36,14 +36,6 @@ const dummyResumeData = {
     title: 'Senior Front-End Developer',
     summary: 'Pengembang web berpengalaman dengan keahlian dalam React, TypeScript, dan UI/UX. Memiliki 5+ tahun pengalaman membangun aplikasi web yang responsif dan user-friendly.',
     website: 'www.budisantoso.dev',
-  },
-  sections: {
-    summary: true,
-    expertise: true,
-    achievements: true,
-    experience: true,
-    education: true,
-    additional: true
   },
   experience: [
     { 
@@ -88,11 +80,63 @@ const dummyResumeData = {
       title: 'Pengembangan Komponen',
       description: 'Membangun library komponen UI yang digunakan di seluruh perusahaan, meningkatkan konsistensi dan kecepatan pengembangan.'
     }
-  ]
+  ],
+  sections: {
+    summary: true,
+    expertise: true,
+    achievements: true,
+    experience: true,
+    education: true,
+    additional: true
+  }
 };
 
 // Type definition for the resume data structure
-type ResumeDataType = typeof dummyResumeData;
+type ResumeDataType = {
+  personalInfo: {
+    fullName: string;
+    email: string;
+    phone: string;
+    location: string;
+    title: string;
+    summary: string;
+    website: string;
+  };
+  experience: Array<{
+    id: number;
+    company: string;
+    position: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  education: Array<{
+    id: number;
+    school: string;
+    degree: string;
+    field: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  skills: string[];
+  languages: string[];
+  certifications: string[];
+  awards: string[];
+  expertise?: string[];
+  achievements?: Array<{
+    title: string;
+    description: string;
+  }>;
+  sections?: {
+    summary: boolean;
+    expertise: boolean;
+    achievements: boolean;
+    experience: boolean;
+    education: boolean;
+    additional: boolean;
+  };
+};
 
 // Type for error handling
 type ErrorWithMessage = {
@@ -101,8 +145,8 @@ type ErrorWithMessage = {
 
 // Fungsi untuk menentukan apakah template membutuhkan foto
 const templateRequiresPhoto = (templateId: string): boolean => {
-  // Template alpha tidak membutuhkan foto
-  return templateId !== 'alpha';
+  // Template prime-suite tidak membutuhkan foto
+  return templateId !== 'prime-suite';
 };
 
 // Tambahkan fungsi untuk membuat elemen dapat diedit
@@ -224,7 +268,7 @@ const SectionManager = ({
 
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(dummyResumeData);
-  const [currentTemplate, setCurrentTemplate] = useState('alpha');
+  const [currentTemplate, setCurrentTemplate] = useState('prime-suite');
   const [templateData, setTemplateData] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resumeTitle, setResumeTitle] = useState('Untitled Resume');
@@ -239,7 +283,7 @@ const ResumeEditor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const templateId = searchParams.get('template') || 'alpha';
+  const templateId = searchParams.get('template') || 'prime-suite';
 
   // Fetch template data, user subscription status, and resume data
   useEffect(() => {
@@ -248,25 +292,13 @@ const ResumeEditor = () => {
       try {
         // Fetch template data
         const { data: templateData, error: templateError } = await supabase
-          .rpc('get_template_by_id', { template_id: templateId })
+          .from('templates')
+          .select('*')
+          .eq('id', templateId)
           .single();
 
         if (templateError) {
           console.error('Error fetching template data:', templateError);
-          
-          // Fallback to direct query if RPC fails
-          const { data: directTemplateData, error: directError } = await supabase
-            .from('templates')
-            .select('*')
-            .eq('id', templateId)
-            .single();
-            
-          if (directError) {
-            console.error('Error with direct template query:', directError);
-          } else if (directTemplateData) {
-            setTemplateData(directTemplateData as Template);
-            setCurrentTemplate(directTemplateData.id);
-          }
         } else if (templateData) {
           setTemplateData(templateData as Template);
           setCurrentTemplate(templateData.id);
@@ -292,7 +324,7 @@ const ResumeEditor = () => {
                 description: "This template is only available with a premium subscription. Using the default template instead.",
                 variant: "destructive",
               });
-              setCurrentTemplate('alpha');
+              setCurrentTemplate('prime-suite');
             }
           }
         }
@@ -568,33 +600,16 @@ const ResumeEditor = () => {
       const reactRoot = ReactDOM.createRoot(cleanTemplate);
       reactRoot.render(
         <React.StrictMode>
-          {currentTemplate === 'alpha' ? (
-            <AlphaTemplate 
-              resumeData={filteredResumeData} 
-              isEditable={true}
-              onSectionToggle={toggleSectionVisibility}
-            />
-          ) : currentTemplate === 'bravo' ? (
-            <BravoTemplate 
-              resumeData={filteredResumeData} 
-              photoUrl={photoUrl || undefined}
-              isEditable={true}
-              onSectionToggle={toggleSectionVisibility}
-            />
-          ) : currentTemplate === 'charlie' ? (
-            <CharlieTemplate 
-              resumeData={filteredResumeData} 
-              photoUrl={photoUrl || undefined}
-              isEditable={true}
-              onSectionToggle={toggleSectionVisibility}
-            />
+          {currentTemplate === 'prime-suite' ? (
+            <PrimeSuiteTemplate resumeData={filteredResumeData} />
+          ) : currentTemplate === 'executive-edge' ? (
+            <ExecutiveEdge resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
+          ) : currentTemplate === 'corporate-blue' ? (
+            <CorporateBlue resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
+          ) : currentTemplate === 'formal-focus' ? (
+            <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
           ) : (
-            <DeltaTemplate 
-              resumeData={filteredResumeData} 
-              photoUrl={photoUrl || undefined}
-              isEditable={true}
-              onSectionToggle={toggleSectionVisibility}
-            />
+            <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
           )}
         </React.StrictMode>
       );
@@ -784,11 +799,11 @@ const ResumeEditor = () => {
   const EditableResumeTemplate = () => {
     // Render template berdasarkan jenis yang dipilih
     switch (currentTemplate) {
-      case 'alpha':
+      case 'prime-suite':
         return (
           <div className="relative">
             <div id="resume-preview" ref={resumeRef}>
-              <AlphaTemplate 
+              <PrimeSuiteTemplate 
                 resumeData={resumeData} 
                 isEditable={true}
                 onSectionToggle={toggleSectionVisibility}
@@ -796,11 +811,11 @@ const ResumeEditor = () => {
             </div>
           </div>
         );
-      case 'bravo':
+      case 'executive-edge':
         return (
           <div className="relative">
             <div id="resume-preview" ref={resumeRef}>
-              <BravoTemplate 
+              <ExecutiveEdge 
                 resumeData={resumeData} 
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
@@ -814,11 +829,29 @@ const ResumeEditor = () => {
             </div>
           </div>
         );
-      case 'charlie':
+      case 'corporate-blue':
         return (
           <div className="relative">
             <div id="resume-preview" ref={resumeRef}>
-              <CharlieTemplate 
+              <CorporateBlue 
+                resumeData={resumeData} 
+                photoUrl={photoUrl || undefined}
+                isEditable={true}
+                onSectionToggle={toggleSectionVisibility}
+              />
+            </div>
+            <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-auto">
+                Klik untuk mengedit
+              </div>
+            </div>
+          </div>
+        );
+      case 'formal-focus':
+        return (
+          <div className="relative">
+            <div id="resume-preview" ref={resumeRef}>
+              <FormalFocus 
                 resumeData={resumeData} 
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
@@ -836,7 +869,7 @@ const ResumeEditor = () => {
         return (
           <div className="relative">
             <div id="resume-preview" ref={resumeRef}>
-              <DeltaTemplate 
+              <FormalFocus 
                 resumeData={resumeData} 
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
@@ -858,7 +891,7 @@ const ResumeEditor = () => {
       <Layout withFooter={false}>
         <div className="container mx-auto px-4 md:px-6 py-12">
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         </div>
       </Layout>

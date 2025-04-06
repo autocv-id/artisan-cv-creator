@@ -41,14 +41,14 @@ interface ResumeDataType {
   };
 }
 
-interface BravoTemplateProps {
+interface ExecutiveEdgeProps {
   resumeData: ResumeDataType;
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
 }
 
-const BravoTemplate: React.FC<BravoTemplateProps> = ({ 
+const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({ 
   resumeData, 
   photoUrl,
   isEditable = false,
@@ -127,7 +127,7 @@ const BravoTemplate: React.FC<BravoTemplateProps> = ({
         <div className="mb-8 relative group">
           {renderSectionToggle('expertise', sections.expertise)}
           <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
-            AREA OF EXPERTISE
+            AREA OF EXPERTISE EXECUTIVE EDGE
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {resumeData.skills.filter(skill => skill).map((skill, index) => (
@@ -170,7 +170,7 @@ const BravoTemplate: React.FC<BravoTemplateProps> = ({
         <div className="mb-8 relative group">
           {renderSectionToggle('experience', sections.experience)}
           <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
-            PROFESSIONAL EXPERIENCE
+            PROFESSIONAL EXPERIENCE EXECUTIVE EDGE
           </h2>
           {resumeData.experience
             .filter(exp => exp.company)
@@ -249,4 +249,4 @@ const BravoTemplate: React.FC<BravoTemplateProps> = ({
   );
 };
 
-export default BravoTemplate; 
+export default ExecutiveEdge; 

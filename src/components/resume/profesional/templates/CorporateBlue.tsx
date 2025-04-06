@@ -41,14 +41,14 @@ interface ResumeDataType {
   };
 }
 
-interface CharlieTemplateProps {
+interface CorporateBlueProps {
   resumeData: ResumeDataType;
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
 }
 
-const CharlieTemplate: React.FC<CharlieTemplateProps> = ({ 
+const CorporateBlue: React.FC<CorporateBlueProps> = ({ 
   resumeData, 
   photoUrl,
   isEditable = false,
@@ -124,7 +124,7 @@ const CharlieTemplate: React.FC<CharlieTemplateProps> = ({
       {sections.summary && resumeData.personalInfo.summary && (
         <div className="mb-6 relative group">
           {renderSectionToggle('summary', sections.summary)}
-          <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Professional Summary</h3>
+          <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Professional Summary corparate blue</h3>
           <p className="text-sm text-gray-700">{resumeData.personalInfo.summary}</p>
         </div>
       )}
@@ -245,4 +245,4 @@ const CharlieTemplate: React.FC<CharlieTemplateProps> = ({
   );
 };
 
-export default CharlieTemplate; 
+export default CorporateBlue; 

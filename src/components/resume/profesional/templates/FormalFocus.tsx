@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface ResumeDataType {
@@ -47,14 +46,14 @@ interface ResumeDataType {
   }>;
 }
 
-interface DeltaTemplateProps {
+interface FormalFocusProps {
   resumeData: ResumeDataType;
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
 }
 
-const DeltaTemplate: React.FC<DeltaTemplateProps> = ({ 
+const FormalFocus: React.FC<FormalFocusProps> = ({ 
   resumeData, 
   photoUrl,
   isEditable = false,
@@ -184,4 +183,4 @@ const DeltaTemplate: React.FC<DeltaTemplateProps> = ({
   );
 };
 
-export default DeltaTemplate;
+export default FormalFocus; 
