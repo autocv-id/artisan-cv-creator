@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface ResumeDataType {
@@ -32,14 +31,53 @@ interface ResumeDataType {
   languages: string[];
   certifications?: string[];
   awards?: string[];
+  sections?: {
+    summary: boolean;
+    expertise: boolean;
+    achievements: boolean;
+    experience: boolean;
+    education: boolean;
+    additional: boolean;
+  };
 }
 
-interface ModernTemplateProps {
+interface BravoTemplateProps {
   resumeData: ResumeDataType;
   photoUrl?: string;
+  isEditable?: boolean;
+  onSectionToggle?: (section: string, visible: boolean) => void;
 }
 
-const ModernTemplate: React.FC<ModernTemplateProps> = ({ resumeData, photoUrl }) => {
+const BravoTemplate: React.FC<BravoTemplateProps> = ({ 
+  resumeData, 
+  photoUrl,
+  isEditable = false,
+  onSectionToggle 
+}) => {
+  // Inisialisasi status section jika belum ada
+  const sections = resumeData.sections || {
+    summary: true,
+    expertise: true,
+    achievements: true,
+    experience: true,
+    education: true,
+    additional: true
+  };
+  
+  // Helper function untuk menampilkan tombol toggle section
+  const renderSectionToggle = (section: string, visible: boolean) => {
+    if (!isEditable || !onSectionToggle) return null;
+    
+    return (
+      <button 
+        className="absolute top-0 right-0 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={() => onSectionToggle(section, !visible)}
+      >
+        {visible ? 'Sembunyikan' : 'Tampilkan'}
+      </button>
+    );
+  };
+
   return (
     <div className="bg-white text-gray-800 p-8 max-w-[21cm] mx-auto">
       {/* Header */}
@@ -77,15 +115,17 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ resumeData, photoUrl })
       </div>
 
       {/* Summary Section */}
-      {resumeData.personalInfo.summary && (
-        <div className="mb-8">
+      {sections.summary && resumeData.personalInfo.summary && (
+        <div className="mb-8 relative group">
+          {renderSectionToggle('summary', sections.summary)}
           <p className="text-sm leading-relaxed">{resumeData.personalInfo.summary}</p>
         </div>
       )}
 
       {/* Areas of Expertise */}
-      {resumeData.skills.some(skill => skill) && (
-        <div className="mb-8">
+      {sections.expertise && resumeData.skills.some(skill => skill) && (
+        <div className="mb-8 relative group">
+          {renderSectionToggle('expertise', sections.expertise)}
           <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
             AREA OF EXPERTISE
           </h2>
@@ -100,8 +140,9 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ resumeData, photoUrl })
       )}
 
       {/* Key Achievements section */}
-      {resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
-        <div className="mb-8">
+      {sections.achievements && resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
+        <div className="mb-8 relative group">
+          {renderSectionToggle('achievements', sections.achievements)}
           <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
             KEY ACHIEVEMENTS
           </h2>
@@ -125,8 +166,9 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ resumeData, photoUrl })
       )}
 
       {/* Work Experience Section */}
-      {resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
-        <div className="mb-8">
+      {sections.experience && resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
+        <div className="mb-8 relative group">
+          {renderSectionToggle('experience', sections.experience)}
           <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
             PROFESSIONAL EXPERIENCE
           </h2>
@@ -149,8 +191,9 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ resumeData, photoUrl })
       )}
 
       {/* Education Section */}
-      {resumeData.education.length > 0 && resumeData.education.some(edu => edu.school) && (
-        <div className="mb-8">
+      {sections.education && resumeData.education.length > 0 && resumeData.education.some(edu => edu.school) && (
+        <div className="mb-8 relative group">
+          {renderSectionToggle('education', sections.education)}
           <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
             EDUCATION
           </h2>
@@ -170,37 +213,40 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ resumeData, photoUrl })
       )}
 
       {/* Additional Information */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
-          ADDITIONAL INFORMATION
-        </h2>
-        
-        {/* Languages Section */}
-        {resumeData.languages.some(lang => lang) && (
-          <div className="mb-2">
-            <p className="font-bold inline text-sm">Languages:</p>{' '}
-            <span className="text-sm">{resumeData.languages.filter(l => l).join(', ')}</span>
-          </div>
-        )}
+      {sections.additional && (
+        <div className="mb-6 relative group">
+          {renderSectionToggle('additional', sections.additional)}
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-200 pb-2">
+            ADDITIONAL INFORMATION
+          </h2>
+          
+          {/* Languages Section */}
+          {resumeData.languages.some(lang => lang) && (
+            <div className="mb-2">
+              <p className="font-bold inline text-sm">Languages:</p>{' '}
+              <span className="text-sm">{resumeData.languages.filter(l => l).join(', ')}</span>
+            </div>
+          )}
 
-        {/* Certifications Section */}
-        {resumeData.certifications && resumeData.certifications.some(cert => cert) && (
-          <div className="mb-2">
-            <p className="font-bold inline text-sm">Certifications:</p>{' '}
-            <span className="text-sm">{resumeData.certifications.filter(c => c).join(', ')}</span>
-          </div>
-        )}
+          {/* Certifications Section */}
+          {resumeData.certifications && resumeData.certifications.some(cert => cert) && (
+            <div className="mb-2">
+              <p className="font-bold inline text-sm">Certifications:</p>{' '}
+              <span className="text-sm">{resumeData.certifications.filter(c => c).join(', ')}</span>
+            </div>
+          )}
 
-        {/* Awards Section */}
-        {resumeData.awards && resumeData.awards.some(award => award) && (
-          <div className="mb-2">
-            <p className="font-bold inline text-sm">Awards/Activities:</p>{' '}
-            <span className="text-sm">{resumeData.awards.filter(a => a).join(', ')}</span>
-          </div>
-        )}
-      </div>
+          {/* Awards Section */}
+          {resumeData.awards && resumeData.awards.some(award => award) && (
+            <div className="mb-2">
+              <p className="font-bold inline text-sm">Awards/Activities:</p>{' '}
+              <span className="text-sm">{resumeData.awards.filter(a => a).join(', ')}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
-export default ModernTemplate;
+export default BravoTemplate; 

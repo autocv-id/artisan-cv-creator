@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link, useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { Lock } from 'lucide-react';
+import { Lock, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -14,16 +13,32 @@ import { Template } from '@/types/templates';
 // Categories for templates
 const categories = [
   "All Templates",
-  "Professional",
+  "Professional", 
   "Modern",
   "Creative",
   "Simple",
   "ATS-Optimized"
 ];
 
+// Import template thumbnail images
+import alphaThumb from '../assets/templates/alpha.jpg';
+
+
+// Predefined templates data (for initial state before fetching from supabase)
+const initialTemplates: Template[] = [
+  {
+    id: 'alpha',
+    name: 'Alpha',
+    description: 'Clean and professional template suitable for most industries',
+    category: 'Professional',
+    is_premium: false,
+    thumbnail: alphaThumb
+  }
+];
+
 const TemplatesPage = () => {
   const [activeCategory, setActiveCategory] = useState("All Templates");
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
   const [isLoading, setIsLoading] = useState(true);
   const [userSubscription, setUserSubscription] = useState<string>('free');
   const { toast } = useToast();
@@ -35,18 +50,6 @@ const TemplatesPage = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch templates
-        const { data: templatesData, error: templatesError } = await supabase
-          .from('templates')
-          .select('*')
-          .order('category');
-          
-        if (templatesError) throw templatesError;
-        
-        if (templatesData) {
-          setTemplates(templatesData as Template[]);
-        }
-        
         // Fetch user subscription status if logged in
         if (user) {
           const { data: profileData, error: profileError } = await supabase
@@ -61,13 +64,34 @@ const TemplatesPage = () => {
             setUserSubscription(profileData.subscription_status);
           }
         }
-      } catch (error: any) {
+        
+        // Note: We're using predefined template data instead of fetching from supabase
+        // You can uncomment this section if you want to fetch from supabase
+        /*
+        const { data: templatesData, error: templatesError } = await supabase
+          .from('templates')
+          .select('*')
+          .order('category');
+          
+        if (templatesError) throw templatesError;
+        
+        if (templatesData) {
+          setTemplates(templatesData as Template[]);
+        }
+        */
+        
+        // Simulate API delay
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
+        
+      } catch (error: unknown) {
+        const errorWithMessage = error as { message?: string };
         toast({
           title: "Error fetching templates",
-          description: error.message || "Failed to load templates",
+          description: errorWithMessage.message || "Failed to load templates",
           variant: "destructive",
         });
-      } finally {
         setIsLoading(false);
       }
     };
@@ -83,20 +107,16 @@ const TemplatesPage = () => {
   const handleTemplateClick = (template: Template) => {
     if (template.is_premium && userSubscription === 'free') {
       toast({
-        title: "Premium Template",
-        description: "This template is only available with a premium subscription.",
-        variant: "destructive",
+        title: "Template Premium",
+        description: "Upgrade ke akun premium untuk menggunakan template ini",
+        variant: "default",
       });
-    } else if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please login to use this template",
-        variant: "destructive",
-      });
-      navigate('/login');
-    } else {
-      navigate(`/editor/new?template=${template.id}`);
+      
+      navigate("/pricing");
+      return;
     }
+    
+    navigate(`/editor/new?template=${template.id}`);
   };
 
   if (isLoading) {
@@ -115,14 +135,14 @@ const TemplatesPage = () => {
     <Layout>
       <div className="container mx-auto px-4 md:px-6 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-5xl font-bold text-resume-primary mb-4">Resume Templates</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-resume-primary mb-4">Template Resume</h1>
           <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-            Choose from our collection of professionally designed templates optimized to pass Applicant Tracking Systems
+            Pilih dari koleksi template kami yang dirancang secara profesional dan dioptimalkan untuk melewati Applicant Tracking Systems
           </p>
           {user && (
             <div className="mt-3">
               <Badge variant={userSubscription === 'premium' ? "default" : "outline"} className="text-sm">
-                {userSubscription === 'premium' ? 'Premium Subscription' : 'Free Tier'}
+                {userSubscription === 'premium' ? 'Langganan Premium' : 'Tier Gratis'}
               </Badge>
             </div>
           )}
@@ -151,16 +171,17 @@ const TemplatesPage = () => {
               key={template.id} 
               className="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all animate-zoom"
             >
-              <div className="relative">
+              <div className="relative aspect-[210/297]"> {/* Aspect ratio A4 */}
                 <img 
-                  src={template.thumbnail || `https://placehold.co/400x500/${template.id === 'professional' ? '1A365D' : '38B2AC'}/FFFFFF/png?text=${template.name}`}
+                  src={template.thumbnail || `https://placehold.co/420x594/1A365D/FFFFFF/png?text=${template.name}`}
                   alt={`${template.name} template`}
-                  className="w-full object-cover h-80"
+                  className="w-full h-full object-contain"
                 />
                 
                 {/* Premium badge */}
                 {template.is_premium && (
-                  <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded">
+                  <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                    <Crown className="h-3 w-3" />
                     PREMIUM
                   </div>
                 )}
@@ -173,10 +194,10 @@ const TemplatesPage = () => {
                     {template.is_premium && userSubscription === 'free' ? (
                       <>
                         <Lock className="h-4 w-4 mr-2" />
-                        Premium Template
+                        Template Premium
                       </>
                     ) : (
-                      "Use This Template"
+                      "Gunakan Template Ini"
                     )}
                   </Button>
                 </div>

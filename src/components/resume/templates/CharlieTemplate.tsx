@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface ResumeDataType {
@@ -32,14 +31,53 @@ interface ResumeDataType {
   languages: string[];
   certifications: string[];
   awards: string[];
+  sections?: {
+    summary: boolean;
+    expertise: boolean;
+    achievements: boolean;
+    experience: boolean;
+    education: boolean;
+    additional: boolean;
+  };
 }
 
-interface ProfessionalBlueTemplateProps {
+interface CharlieTemplateProps {
   resumeData: ResumeDataType;
   photoUrl?: string;
+  isEditable?: boolean;
+  onSectionToggle?: (section: string, visible: boolean) => void;
 }
 
-const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ resumeData, photoUrl }) => {
+const CharlieTemplate: React.FC<CharlieTemplateProps> = ({ 
+  resumeData, 
+  photoUrl,
+  isEditable = false,
+  onSectionToggle 
+}) => {
+  // Inisialisasi status section jika belum ada
+  const sections = resumeData.sections || {
+    summary: true,
+    expertise: true,
+    achievements: true,
+    experience: true,
+    education: true,
+    additional: true
+  };
+  
+  // Helper function untuk menampilkan tombol toggle section
+  const renderSectionToggle = (section: string, visible: boolean) => {
+    if (!isEditable || !onSectionToggle) return null;
+    
+    return (
+      <button 
+        className="absolute top-0 right-0 text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={() => onSectionToggle(section, !visible)}
+      >
+        {visible ? 'Sembunyikan' : 'Tampilkan'}
+      </button>
+    );
+  };
+
   // Split description into bullet points for experience and education
   const formatDescription = (description: string) => {
     return description.split('\n').filter(line => line.trim() !== '');
@@ -83,8 +121,9 @@ const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ res
       </div>
       
       {/* Summary */}
-      {resumeData.personalInfo.summary && (
-        <div className="mb-6">
+      {sections.summary && resumeData.personalInfo.summary && (
+        <div className="mb-6 relative group">
+          {renderSectionToggle('summary', sections.summary)}
           <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Professional Summary</h3>
           <p className="text-sm text-gray-700">{resumeData.personalInfo.summary}</p>
         </div>
@@ -95,8 +134,9 @@ const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ res
         {/* Left column - wider */}
         <div className="md:w-2/3">
           {/* Experience */}
-          {resumeData.experience && resumeData.experience.length > 0 && (
-            <div className="mb-6">
+          {sections.experience && resumeData.experience && resumeData.experience.length > 0 && (
+            <div className="mb-6 relative group">
+              {renderSectionToggle('experience', sections.experience)}
               <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-3">Professional Experience</h3>
               
               {resumeData.experience.map((exp) => (
@@ -118,8 +158,9 @@ const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ res
           )}
           
           {/* Education */}
-          {resumeData.education && resumeData.education.length > 0 && (
-            <div className="mb-6">
+          {sections.education && resumeData.education && resumeData.education.length > 0 && (
+            <div className="mb-6 relative group">
+              {renderSectionToggle('education', sections.education)}
               <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-3">Education</h3>
               
               {resumeData.education.map((edu) => (
@@ -142,8 +183,9 @@ const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ res
         {/* Right column - narrower */}
         <div className="md:w-1/3">
           {/* Skills */}
-          {resumeData.skills && resumeData.skills.length > 0 && resumeData.skills[0] !== '' && (
-            <div className="mb-6">
+          {sections.expertise && resumeData.skills && resumeData.skills.length > 0 && resumeData.skills[0] !== '' && (
+            <div className="mb-6 relative group">
+              {renderSectionToggle('expertise', sections.expertise)}
               <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Skills</h3>
               <ul className="text-sm">
                 {resumeData.skills.map((skill, index) => (
@@ -155,39 +197,46 @@ const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ res
             </div>
           )}
           
-          {/* Languages */}
-          {resumeData.languages && resumeData.languages.length > 0 && resumeData.languages[0] !== '' && (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Languages</h3>
-              <ul className="text-sm">
-                {resumeData.languages.map((language, index) => (
-                  <li key={index} className="mb-1">{language}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {/* Certifications */}
-          {resumeData.certifications && resumeData.certifications.length > 0 && resumeData.certifications[0] !== '' && (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Certifications</h3>
-              <ul className="text-sm">
-                {resumeData.certifications.map((cert, index) => (
-                  <li key={index} className="mb-1">{cert}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {/* Awards */}
-          {resumeData.awards && resumeData.awards.length > 0 && resumeData.awards[0] !== '' && (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Awards & Activities</h3>
-              <ul className="text-sm">
-                {resumeData.awards.map((award, index) => (
-                  <li key={index} className="mb-1">{award}</li>
-                ))}
-              </ul>
+          {/* Additional Information */}
+          {sections.additional && (
+            <div className="relative group">
+              {renderSectionToggle('additional', sections.additional)}
+            
+              {/* Languages */}
+              {resumeData.languages && resumeData.languages.length > 0 && resumeData.languages[0] !== '' && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Languages</h3>
+                  <ul className="text-sm">
+                    {resumeData.languages.map((language, index) => (
+                      <li key={index} className="mb-1">{language}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Certifications */}
+              {resumeData.certifications && resumeData.certifications.length > 0 && resumeData.certifications[0] !== '' && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Certifications</h3>
+                  <ul className="text-sm">
+                    {resumeData.certifications.map((cert, index) => (
+                      <li key={index} className="mb-1">{cert}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Awards */}
+              {resumeData.awards && resumeData.awards.length > 0 && resumeData.awards[0] !== '' && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-blue-700 border-b border-gray-300 pb-1 mb-2">Awards & Activities</h3>
+                  <ul className="text-sm">
+                    {resumeData.awards.map((award, index) => (
+                      <li key={index} className="mb-1">{award}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -196,4 +245,4 @@ const ProfessionalBlueTemplate: React.FC<ProfessionalBlueTemplateProps> = ({ res
   );
 };
 
-export default ProfessionalBlueTemplate;
+export default CharlieTemplate; 

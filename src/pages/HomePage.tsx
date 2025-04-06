@@ -44,8 +44,8 @@ const HomePage = () => {
             <div className="lg:w-1/2 relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <div className="bg-white rounded-lg shadow-lg p-4 rotate-2 transition-transform hover:rotate-0 hover-scale">
                 <img 
-                  src="https://placehold.co/600x800/1A365D/FFFFFF/png?text=Professional+Resume" 
-                  alt="Resume preview" 
+                  src="/src/assets/templates/alpha.jpg"
+                  alt="Resume preview"
                   className="rounded-md"
                 />
               </div>
