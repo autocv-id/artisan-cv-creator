@@ -44,7 +44,7 @@ const HomePage = () => {
             <div className="lg:w-1/2 relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <div className="bg-white rounded-lg shadow-lg p-4 rotate-2 transition-transform hover:rotate-0 hover-scale">
                 <img 
-                  src="../assets/templates/alpha.jpg"
+                  src="https://wdguqtkfrpxmjzygousk.supabase.co/storage/v1/object/public/assets//alpha.jpg"
                   alt="Resume preview"
                   className="rounded-md"
                 />
