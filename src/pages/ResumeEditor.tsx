@@ -37,6 +37,14 @@ const dummyResumeData = {
     summary: 'Pengembang web berpengalaman dengan keahlian dalam React, TypeScript, dan UI/UX. Memiliki 5+ tahun pengalaman membangun aplikasi web yang responsif dan user-friendly.',
     website: 'www.budisantoso.dev',
   },
+  sections: {
+    summary: true,
+    expertise: true,
+    achievements: true,
+    experience: true,
+    education: true,
+    additional: true
+  },
   experience: [
     { 
       id: 1, 
@@ -561,13 +569,32 @@ const ResumeEditor = () => {
       reactRoot.render(
         <React.StrictMode>
           {currentTemplate === 'alpha' ? (
-            <AlphaTemplate resumeData={filteredResumeData} />
+            <AlphaTemplate 
+              resumeData={filteredResumeData} 
+              isEditable={true}
+              onSectionToggle={toggleSectionVisibility}
+            />
           ) : currentTemplate === 'bravo' ? (
-            <BravoTemplate resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
+            <BravoTemplate 
+              resumeData={filteredResumeData} 
+              photoUrl={photoUrl || undefined}
+              isEditable={true}
+              onSectionToggle={toggleSectionVisibility}
+            />
           ) : currentTemplate === 'charlie' ? (
-            <CharlieTemplate resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
+            <CharlieTemplate 
+              resumeData={filteredResumeData} 
+              photoUrl={photoUrl || undefined}
+              isEditable={true}
+              onSectionToggle={toggleSectionVisibility}
+            />
           ) : (
-            <DeltaTemplate resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
+            <DeltaTemplate 
+              resumeData={filteredResumeData} 
+              photoUrl={photoUrl || undefined}
+              isEditable={true}
+              onSectionToggle={toggleSectionVisibility}
+            />
           )}
         </React.StrictMode>
       );
