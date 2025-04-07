@@ -1,39 +1,33 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
   Download, 
   Save, 
-  Upload,
   Camera,
-  Eye,
-  Settings,
-  Printer,
-  Edit,
-  ChevronDown,
-  ChevronUp,
   Plus,
-  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Template } from '@/types/templates';
-import ReactDOM from 'react-dom/client';
-import React from 'react';
-import { ResumeDataType, convertToResumeData, convertToResumeDataType, ResumeData } from '@/types/resume';
-import PrimeSuiteTemplate from '@/components/resume/profesional/templates/primesuite';
-import ExecutiveEdge from '@/components/resume/profesional/templates/ExecutiveEdge';
-import CorporateBlue from '@/components/resume/profesional/templates/CorporateBlue';
-import FormalFocus from '@/components/resume/profesional/templates/FormalFocus';
+import { ResumeDataType, convertToResumeData } from '@/types/resume';
+
+// Import refactored components
+import ResumePreview from '@/components/resume/ResumePreview';
+import SectionManager from '@/components/resume/SectionManager';
+import EditorToolbar from '@/components/resume/EditorToolbar';
+import PersonalInfoForm from '@/components/resume/form/PersonalInfoForm';
+import ExperienceForm from '@/components/resume/form/ExperienceForm';
+import EducationForm from '@/components/resume/form/EducationForm';
+import SkillsForm from '@/components/resume/form/SkillsForm';
+import AwardsForm from '@/components/resume/form/AwardsForm';
+import { generateResumePDF } from '@/utils/resumePdfExport';
 
 const dummyResumeData: ResumeDataType = {
   personalInfo: {
@@ -107,193 +101,6 @@ const templateRequiresPhoto = (templateId: string): boolean => {
   return templateId !== 'prime-suite';
 };
 
-const EditableField = ({ 
-  value, 
-  onChange, 
-  className = "", 
-  isMultiline = false 
-}: { 
-  value: string, 
-  onChange: (value: string) => void, 
-  className?: string,
-  isMultiline?: boolean 
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const elementRef = useRef<HTMLDivElement | HTMLSpanElement>(null);
-  
-  const handleBlur = () => {
-    if (elementRef.current) {
-      onChange(elementRef.current.innerText);
-      setIsEditing(false);
-    }
-  };
-  
-  const handleClick = () => {
-    setIsEditing(true);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isMultiline) {
-      e.preventDefault();
-      elementRef.current?.blur();
-    }
-    
-    if (e.key === 'Escape') {
-      if (elementRef.current) {
-        elementRef.current.innerText = value;
-        elementRef.current.blur();
-      }
-    }
-  };
-  
-  const editableStyle = `
-    ${isEditing ? 'bg-blue-50 ring-2 ring-blue-300' : 'hover:bg-gray-50'}
-    outline-none rounded px-1 transition-colors duration-150 ease-in-out
-    ${className}
-  `;
-  
-  return isMultiline ? (
-    <div
-      ref={elementRef as React.RefObject<HTMLDivElement>}
-      contentEditable
-      suppressContentEditableWarning
-      onBlur={handleBlur}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      className={editableStyle}
-      dangerouslySetInnerHTML={{ __html: value }}
-    />
-  ) : (
-    <span
-      ref={elementRef as React.RefObject<HTMLSpanElement>}
-      contentEditable
-      suppressContentEditableWarning
-      onBlur={handleBlur}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      className={editableStyle}
-      dangerouslySetInnerHTML={{ __html: value }}
-    />
-  );
-};
-
-const SectionManager = ({
-  sections,
-  onToggle
-}: {
-  sections: Record<string, boolean>,
-  onToggle: (section: string, visible: boolean) => void
-}) => {
-  const sectionNames: Record<string, string> = {
-    summary: "Ringkasan",
-    expertise: "Area Keahlian",
-    achievements: "Pencapaian Utama",
-    experience: "Pengalaman Profesional",
-    education: "Pendidikan",
-    additional: "Informasi Tambahan"
-  };
-
-  return (
-    <Card className="p-4 mb-4 bg-white shadow-sm">
-      <h3 className="font-medium text-sm mb-3 text-gray-700">Kelola Bagian Resume</h3>
-      <div className="grid grid-cols-2 gap-3">
-        {Object.entries(sections).map(([section, isVisible]) => (
-          <div key={section} className="flex items-center space-x-2 bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
-              id={`section-${section}`}
-              checked={isVisible}
-              onChange={() => onToggle(section, !isVisible)}
-              className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-            />
-            <label htmlFor={`section-${section}`} className="text-sm text-gray-700 cursor-pointer">
-              {sectionNames[section] || section}
-            </label>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-};
-
-const EditorToolbar = ({
-  onAddItem,
-  activeSection
-}: {
-  onAddItem: (section: string) => void;
-  activeSection: string;
-}) => {
-  const sectionButtonsMap: Record<string, { label: string, section: string }[]> = {
-    personal: [],
-    experience: [{ label: "Tambah Pengalaman", section: "experience" }],
-    education: [{ label: "Tambah Pendidikan", section: "education" }],
-    skills: [
-      { label: "Tambah Keterampilan", section: "skills" },
-      { label: "Tambah Bahasa", section: "languages" },
-      { label: "Tambah Keahlian", section: "expertise" }
-    ],
-    awards: [
-      { label: "Tambah Penghargaan", section: "awards" },
-      { label: "Tambah Sertifikasi", section: "certifications" },
-      { label: "Tambah Pencapaian", section: "achievements" }
-    ]
-  };
-
-  const buttons = sectionButtonsMap[activeSection] || [];
-
-  return buttons.length > 0 ? (
-    <div className="bg-white border border-gray-200 rounded-md shadow-sm p-2 mb-4 flex flex-wrap gap-2">
-      {buttons.map((btn, idx) => (
-        <Button 
-          key={idx} 
-          variant="outline" 
-          size="sm" 
-          onClick={() => onAddItem(btn.section)}
-          className="flex items-center gap-1 text-xs"
-        >
-          <Plus className="h-3 w-3" /> {btn.label}
-        </Button>
-      ))}
-    </div>
-  ) : null;
-};
-
-const ResumePreview = ({
-  resumeData,
-  currentTemplate,
-  photoUrl,
-  editorZoom = 100
-}: {
-  resumeData: ResumeDataType;
-  currentTemplate: string;
-  photoUrl: string | null;
-  editorZoom?: number;
-}) => {
-  return (
-    <div 
-      className="bg-white shadow-lg overflow-hidden max-w-full mx-auto"
-      style={{ 
-        width: `${21 * (editorZoom / 100)}cm`,
-        minHeight: `${29.7 * (editorZoom / 100)}cm`,
-        transform: `scale(${editorZoom / 100})`,
-        transformOrigin: 'top center',
-      }}
-    >
-      {currentTemplate === 'prime-suite' ? (
-        <PrimeSuiteTemplate resumeData={resumeData} />
-      ) : currentTemplate === 'executive-edge' ? (
-        <ExecutiveEdge resumeData={resumeData} photoUrl={photoUrl || undefined} />
-      ) : currentTemplate === 'corporate-blue' ? (
-        <CorporateBlue resumeData={resumeData} photoUrl={photoUrl || undefined} />
-      ) : currentTemplate === 'formal-focus' ? (
-        <FormalFocus resumeData={resumeData} photoUrl={photoUrl || undefined} />
-      ) : (
-        <FormalFocus resumeData={resumeData} photoUrl={photoUrl || undefined} />
-      )}
-    </div>
-  );
-};
-
 const ResumeEditor = () => {
   const [resumeData, setResumeData] = useState<ResumeDataType>(dummyResumeData);
   const [currentTemplate, setCurrentTemplate] = useState('prime-suite');
@@ -304,7 +111,6 @@ const ResumeEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('preview');
   const [activeEditorSection, setActiveEditorSection] = useState('personal');
   const [editorZoom, setEditorZoom] = useState(100);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -433,21 +239,6 @@ const ResumeEditor = () => {
     }
   };
 
-  const handleFieldEdit = (section: keyof ResumeDataType, field: string, value: string) => {
-    setResumeData(prev => {
-      const newData = { ...prev };
-      
-      if (section === 'personalInfo') {
-        newData.personalInfo = {
-          ...newData.personalInfo,
-          [field]: value
-        };
-      }
-      
-      return newData;
-    });
-  };
-
   const handleSave = async () => {
     if (!user) {
       toast({
@@ -512,234 +303,12 @@ const ResumeEditor = () => {
     setIsDownloading(true);
     
     try {
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '-9999px';
-      document.body.appendChild(tempDiv);
-      
-      const cleanTemplate = document.createElement('div');
-      cleanTemplate.className = 'pdf-ready bg-white';
-      cleanTemplate.style.width = '21cm';
-      cleanTemplate.style.minHeight = '29.7cm';
-      cleanTemplate.style.padding = '1.5cm';
-      cleanTemplate.style.boxSizing = 'border-box';
-      
-      const visibleSections = resumeData.sections || {
-        summary: true,
-        expertise: true,
-        achievements: true,
-        experience: true,
-        education: true,
-        additional: true
-      };
-      
-      const filteredResumeData = {
-        ...resumeData,
-        sections: visibleSections
-      };
-      
-      const styleElement = document.createElement('style');
-      styleElement.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
-        .pdf-ready {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-          line-height: 1.5;
-          letter-spacing: normal;
-          font-feature-settings: normal;
-          text-rendering: optimizeLegibility;
-          -webkit-font-smoothing: antialiased;
-          overflow: hidden;
-          break-inside: avoid;
-        }
-        .pdf-ready * {
-          letter-spacing: normal;
-          word-spacing: normal;
-          text-rendering: optimizeLegibility;
-          page-break-inside: avoid;
-        }
-        .pdf-ready h1 {
-          font-size: 24px;
-          margin-bottom: 8px;
-          font-weight: 700;
-          letter-spacing: normal;
-          page-break-after: avoid;
-        }
-        .pdf-ready h2 {
-          font-size: 18px;
-          margin-bottom: 8px;
-          font-weight: 600;
-          letter-spacing: normal;
-          page-break-after: avoid;
-        }
-        .pdf-ready h3 {
-          font-size: 16px;
-          margin-bottom: 6px;
-          font-weight: 600;
-          letter-spacing: normal;
-          page-break-after: avoid;
-        }
-        .pdf-ready p {
-          margin-bottom: 6px;
-          font-size: 14px;
-          orphans: 3;
-          widows: 3;
-        }
-        .pdf-ready ul {
-          margin-top: 6px;
-          margin-bottom: 12px;
-        }
-        .pdf-ready li {
-          margin-bottom: 4px;
-          font-size: 14px;
-        }
-        .pdf-ready .mb-6 {
-          margin-bottom: 24px;
-        }
-        .pdf-ready .mb-4 {
-          margin-bottom: 16px;
-        }
-        .pdf-ready .mb-2 {
-          margin-bottom: 8px;
-        }
-        .pdf-ready .text-sm {
-          font-size: 14px;
-          letter-spacing: normal;
-        }
-        .pdf-ready section {
-          page-break-inside: avoid;
-        }
-        .pdf-ready hr {
-          page-break-after: always;
-        }
-        .pdf-ready .page-break {
-          page-break-before: always;
-        }
-      `;
-      document.head.appendChild(styleElement);
-      
-      tempDiv.appendChild(cleanTemplate);
-      
-      await document.fonts.ready;
-      
-      const reactRoot = ReactDOM.createRoot(cleanTemplate);
-      reactRoot.render(
-        <React.StrictMode>
-          {currentTemplate === 'prime-suite' ? (
-            <PrimeSuiteTemplate resumeData={filteredResumeData} />
-          ) : currentTemplate === 'executive-edge' ? (
-            <ExecutiveEdge resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-          ) : currentTemplate === 'corporate-blue' ? (
-            <CorporateBlue resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-          ) : currentTemplate === 'formal-focus' ? (
-            <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-          ) : (
-            <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-          )}
-        </React.StrictMode>
-      );
-      
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-        hotfixes: ["px_scaling"]
-      });
-      
-      const scale = 2;
-      const pdfOptions = {
-        scale: scale,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        letterRendering: true,
-        backgroundColor: '#ffffff',
-        imageTimeout: 15000,
-        width: cleanTemplate.offsetWidth * scale,
-        height: cleanTemplate.offsetHeight * scale
-      };
-      
-      const canvas = await html2canvas(cleanTemplate, pdfOptions);
-      
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      
-      if (imgHeight > pdfHeight) {
-        const multiPageCanvas = document.createElement('canvas');
-        const ctx = multiPageCanvas.getContext('2d');
-        
-        if (ctx) {
-          const pageHeight = (pdfHeight * imgWidth) / pdfWidth;
-          const totalPages = Math.ceil(imgHeight / pageHeight);
-          
-          for (let page = 0; page < totalPages; page++) {
-            if (page > 0) {
-              pdf.addPage();
-            }
-            
-            const sourceY = page * pageHeight;
-            let sourceHeight = pageHeight;
-            
-            if (sourceY + sourceHeight > imgHeight) {
-              sourceHeight = imgHeight - sourceY;
-            }
-            
-            multiPageCanvas.width = imgWidth;
-            multiPageCanvas.height = sourceHeight;
-            
-            ctx.drawImage(
-              canvas, 
-              0, sourceY, imgWidth, sourceHeight, 
-              0, 0, imgWidth, sourceHeight
-            );
-            
-            const pageData = multiPageCanvas.toDataURL('image/jpeg', 1.0);
-            
-            pdf.addImage(
-              pageData, 
-              'JPEG', 
-              0, 0, 
-              pdfWidth, (sourceHeight * pdfWidth) / imgWidth, 
-              '', 
-              'FAST'
-            );
-          }
-        }
-      } else {
-        pdf.addImage(
-          imgData, 
-          'JPEG', 
-          0, 0, 
-          finalWidth, finalHeight, 
-          '', 
-          'FAST'
-        );
-      }
-      
-      pdf.save(`${resumeTitle.replace(/\s+/g, '_')}.pdf`);
-      
-      document.body.removeChild(tempDiv);
-      document.head.removeChild(styleElement);
+      await generateResumePDF(resumeData, currentTemplate, photoUrl, resumeTitle);
       
       toast({
         title: "PDF berhasil dibuat",
         description: "Resume Anda telah berhasil didownload dengan kualitas yang lebih baik.",
       });
-      
     } catch (error) {
       console.error('Error creating PDF:', error);
       toast({
@@ -1020,365 +589,64 @@ const ResumeEditor = () => {
                   </TabsList>
 
                   <TabsContent value="personal">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Full Name</label>
-                        <EditableField
-                          value={resumeData.personalInfo.fullName}
-                          onChange={(value) => updatePersonalInfo('fullName', value)}
-                          className="block w-full p-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Job Title</label>
-                        <EditableField
-                          value={resumeData.personalInfo.title}
-                          onChange={(value) => updatePersonalInfo('title', value)}
-                          className="block w-full p-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Email</label>
-                        <EditableField
-                          value={resumeData.personalInfo.email}
-                          onChange={(value) => updatePersonalInfo('email', value)}
-                          className="block w-full p-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Phone</label>
-                        <EditableField
-                          value={resumeData.personalInfo.phone}
-                          onChange={(value) => updatePersonalInfo('phone', value)}
-                          className="block w-full p-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Location</label>
-                        <EditableField
-                          value={resumeData.personalInfo.location}
-                          onChange={(value) => updatePersonalInfo('location', value)}
-                          className="block w-full p-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Website</label>
-                        <EditableField
-                          value={resumeData.personalInfo.website}
-                          onChange={(value) => updatePersonalInfo('website', value)}
-                          className="block w-full p-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Summary</label>
-                        <EditableField
-                          value={resumeData.personalInfo.summary}
-                          onChange={(value) => updatePersonalInfo('summary', value)}
-                          className="block w-full p-2 min-h-[100px]"
-                          isMultiline={true}
-                        />
-                      </div>
-                    </div>
+                    <PersonalInfoForm
+                      fullName={resumeData.personalInfo.fullName}
+                      title={resumeData.personalInfo.title}
+                      email={resumeData.personalInfo.email}
+                      phone={resumeData.personalInfo.phone}
+                      location={resumeData.personalInfo.location}
+                      website={resumeData.personalInfo.website}
+                      summary={resumeData.personalInfo.summary}
+                      updateField={updatePersonalInfo}
+                    />
                   </TabsContent>
 
                   <TabsContent value="experience">
                     <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <div className="space-y-6">
-                      {resumeData.experience.map((exp, index) => (
-                        <Card key={exp.id} className="p-4 relative">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeItem('experience', index)}
-                            className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Position</label>
-                            <EditableField
-                              value={exp.position}
-                              onChange={(value) => updateExperience(exp.id, 'position', value)}
-                              className="block w-full p-2"
-                            />
-                          </div>
-                          <div className="space-y-2 mt-3">
-                            <label className="text-sm font-medium">Company</label>
-                            <EditableField
-                              value={exp.company}
-                              onChange={(value) => updateExperience(exp.id, 'company', value)}
-                              className="block w-full p-2"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mt-3">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Start Date</label>
-                              <EditableField
-                                value={exp.startDate}
-                                onChange={(value) => updateExperience(exp.id, 'startDate', value)}
-                                className="block w-full p-2"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">End Date</label>
-                              <EditableField
-                                value={exp.endDate}
-                                onChange={(value) => updateExperience(exp.id, 'endDate', value)}
-                                className="block w-full p-2"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2 mt-3">
-                            <label className="text-sm font-medium">Description</label>
-                            <EditableField
-                              value={exp.description}
-                              onChange={(value) => updateExperience(exp.id, 'description', value)}
-                              className="block w-full p-2 min-h-[100px]"
-                              isMultiline={true}
-                            />
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+                    <ExperienceForm
+                      experiences={resumeData.experience}
+                      updateExperience={updateExperience}
+                      removeItem={(index) => removeItem('experience', index)}
+                    />
                   </TabsContent>
 
                   <TabsContent value="education">
                     <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <div className="space-y-6">
-                      {resumeData.education.map((edu, index) => (
-                        <Card key={edu.id} className="p-4 relative">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeItem('education', index)}
-                            className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">School</label>
-                            <EditableField
-                              value={edu.school}
-                              onChange={(value) => updateEducation(edu.id, 'school', value)}
-                              className="block w-full p-2"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mt-3">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Degree</label>
-                              <EditableField
-                                value={edu.degree}
-                                onChange={(value) => updateEducation(edu.id, 'degree', value)}
-                                className="block w-full p-2"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Field of Study</label>
-                              <EditableField
-                                value={edu.field}
-                                onChange={(value) => updateEducation(edu.id, 'field', value)}
-                                className="block w-full p-2"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mt-3">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Start Date</label>
-                              <EditableField
-                                value={edu.startDate}
-                                onChange={(value) => updateEducation(edu.id, 'startDate', value)}
-                                className="block w-full p-2"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">End Date</label>
-                              <EditableField
-                                value={edu.endDate}
-                                onChange={(value) => updateEducation(edu.id, 'endDate', value)}
-                                className="block w-full p-2"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2 mt-3">
-                            <label className="text-sm font-medium">Description</label>
-                            <EditableField
-                              value={edu.description}
-                              onChange={(value) => updateEducation(edu.id, 'description', value)}
-                              className="block w-full p-2 min-h-[100px]"
-                              isMultiline={true}
-                            />
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+                    <EducationForm
+                      educations={resumeData.education}
+                      updateEducation={updateEducation}
+                      removeItem={(index) => removeItem('education', index)}
+                    />
                   </TabsContent>
 
                   <TabsContent value="skills">
                     <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-medium mb-2">Skills</h3>
-                        <div className="space-y-2">
-                          {resumeData.skills.map((skill, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <EditableField
-                                value={skill}
-                                onChange={(value) => updateSkill(index, value)}
-                                className="block flex-1 p-2"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeItem('skills', index)}
-                                className="h-8 w-8 text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mt-6">
-                        <h3 className="font-medium mb-2">Languages</h3>
-                        <div className="space-y-2">
-                          {resumeData.languages.map((language, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <EditableField
-                                value={language}
-                                onChange={(value) => updateLanguage(index, value)}
-                                className="block flex-1 p-2"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeItem('languages', index)}
-                                className="h-8 w-8 text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {resumeData.expertise && (
-                        <div className="mt-6">
-                          <h3 className="font-medium mb-2">Areas of Expertise</h3>
-                          <div className="space-y-2">
-                            {resumeData.expertise.map((item, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <EditableField
-                                  value={item}
-                                  onChange={(value) => updateExpertise(index, value)}
-                                  className="block flex-1 p-2"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItem('expertise', index)}
-                                  className="h-8 w-8 text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <SkillsForm
+                      skills={resumeData.skills}
+                      languages={resumeData.languages}
+                      expertise={resumeData.expertise || []}
+                      updateSkill={updateSkill}
+                      updateLanguage={updateLanguage}
+                      updateExpertise={updateExpertise}
+                      removeSkill={(index) => removeItem('skills', index)}
+                      removeLanguage={(index) => removeItem('languages', index)}
+                      removeExpertise={(index) => removeItem('expertise', index)}
+                    />
                   </TabsContent>
 
                   <TabsContent value="awards">
                     <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <div className="space-y-4">
-                      {resumeData.awards && (
-                        <div>
-                          <h3 className="font-medium mb-2">Awards</h3>
-                          <div className="space-y-2">
-                            {resumeData.awards.map((award, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <EditableField
-                                  value={award}
-                                  onChange={(value) => updateAward(index, value)}
-                                  className="block flex-1 p-2"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItem('awards', index)}
-                                  className="h-8 w-8 text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {resumeData.certifications && (
-                        <div className="mt-6">
-                          <h3 className="font-medium mb-2">Certifications</h3>
-                          <div className="space-y-2">
-                            {resumeData.certifications.map((cert, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <EditableField
-                                  value={cert}
-                                  onChange={(value) => updateCertification(index, value)}
-                                  className="block flex-1 p-2"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItem('certifications', index)}
-                                  className="h-8 w-8 text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {resumeData.achievements && (
-                        <div className="mt-6">
-                          <h3 className="font-medium mb-2">Achievements</h3>
-                          <div className="space-y-4">
-                            {resumeData.achievements.map((achievement, index) => (
-                              <Card key={index} className="p-4 relative">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeItem('achievements', index)}
-                                  className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Title</label>
-                                  <EditableField
-                                    value={achievement.title}
-                                    onChange={(value) => updateAchievement(index, 'title', value)}
-                                    className="block w-full p-2"
-                                  />
-                                </div>
-                                <div className="space-y-2 mt-3">
-                                  <label className="text-sm font-medium">Description</label>
-                                  <EditableField
-                                    value={achievement.description}
-                                    onChange={(value) => updateAchievement(index, 'description', value)}
-                                    className="block w-full p-2"
-                                    isMultiline={true}
-                                  />
-                                </div>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <AwardsForm
+                      awards={resumeData.awards || []}
+                      certifications={resumeData.certifications || []}
+                      achievements={resumeData.achievements || []}
+                      updateAward={updateAward}
+                      updateCertification={updateCertification}
+                      updateAchievement={updateAchievement}
+                      removeAward={(index) => removeItem('awards', index)}
+                      removeCertification={(index) => removeItem('certifications', index)}
+                      removeAchievement={(index) => removeItem('achievements', index)}
+                    />
                   </TabsContent>
                 </Tabs>
               </Card>
