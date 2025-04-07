@@ -130,26 +130,36 @@ export const generateResumePDF = async (
   
   await document.fonts.ready;
   
-  // Create a function to render the template
+  // Create a function to render the template based on currentTemplate value
   const renderTemplate = () => {
     if (currentTemplate === 'prime-suite') {
-      return <PrimeSuiteTemplate resumeData={filteredResumeData} />;
+      return React.createElement(PrimeSuiteTemplate, { resumeData: filteredResumeData });
     } else if (currentTemplate === 'executive-edge') {
-      return <ExecutiveEdge resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+      return React.createElement(ExecutiveEdge, { 
+        resumeData: filteredResumeData, 
+        photoUrl: photoUrl || undefined 
+      });
     } else if (currentTemplate === 'corporate-blue') {
-      return <CorporateBlue resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+      return React.createElement(CorporateBlue, { 
+        resumeData: filteredResumeData, 
+        photoUrl: photoUrl || undefined 
+      });
     } else if (currentTemplate === 'formal-focus') {
-      return <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+      return React.createElement(FormalFocus, { 
+        resumeData: filteredResumeData, 
+        photoUrl: photoUrl || undefined 
+      });
     } else {
-      return <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+      return React.createElement(FormalFocus, { 
+        resumeData: filteredResumeData, 
+        photoUrl: photoUrl || undefined 
+      });
     }
   };
   
   const reactRoot = ReactDOM.createRoot(cleanTemplate);
   reactRoot.render(
-    <React.StrictMode>
-      {renderTemplate()}
-    </React.StrictMode>
+    React.createElement(React.StrictMode, null, renderTemplate())
   );
   
   await new Promise(resolve => setTimeout(resolve, 800));
