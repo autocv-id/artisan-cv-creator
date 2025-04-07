@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -960,3 +961,601 @@ const ResumeEditor = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
+        <div className="mb-6 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard" className="text-gray-500 hover:text-gray-700">
+              <Button variant="ghost" size="sm" className="px-2">
+                ← Back to Dashboard
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-800">
+              <Input
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+                className="text-2xl font-bold border-0 px-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+              />
+            </h1>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1"
+              disabled={!templateRequiresPhoto(currentTemplate)}
+            >
+              <Camera className="h-4 w-4" />
+              {photoUrl ? 'Change Photo' : 'Add Photo'}
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSave}
+              disabled={isSaving || !user}
+              className="flex items-center gap-1"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex items-center gap-1"
+            >
+              <Download className="h-4 w-4" />
+              {isDownloading ? 'Generating...' : 'Export PDF'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-6">
+          {/* Left sidebar - Sections navigation */}
+          <div className="col-span-2 bg-gray-50 rounded-lg p-4">
+            <h3 className="font-medium text-sm mb-3 text-gray-700">Bagian Resume</h3>
+            <div className="flex flex-col space-y-1">
+              <Button
+                variant={activeEditorSection === 'personal' ? 'default' : 'ghost'}
+                size="sm"
+                className="justify-start"
+                onClick={() => setActiveEditorSection('personal')}
+              >
+                Informasi Pribadi
+              </Button>
+              <Button
+                variant={activeEditorSection === 'experience' ? 'default' : 'ghost'}
+                size="sm"
+                className="justify-start"
+                onClick={() => setActiveEditorSection('experience')}
+              >
+                Pengalaman
+              </Button>
+              <Button
+                variant={activeEditorSection === 'education' ? 'default' : 'ghost'}
+                size="sm"
+                className="justify-start"
+                onClick={() => setActiveEditorSection('education')}
+              >
+                Pendidikan
+              </Button>
+              <Button
+                variant={activeEditorSection === 'skills' ? 'default' : 'ghost'}
+                size="sm"
+                className="justify-start"
+                onClick={() => setActiveEditorSection('skills')}
+              >
+                Keterampilan
+              </Button>
+              <Button
+                variant={activeEditorSection === 'awards' ? 'default' : 'ghost'}
+                size="sm"
+                className="justify-start"
+                onClick={() => setActiveEditorSection('awards')}
+              >
+                Penghargaan & Sertifikasi
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start mt-4"
+                onClick={() => setActiveTab('settings')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Pengaturan
+              </Button>
+            </div>
+          </div>
+
+          {/* Middle - Edit Form */}
+          <div className="col-span-5 overflow-y-auto max-h-[calc(100vh-200px)]">
+            <Card className="p-4 mb-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {activeEditorSection === 'personal' && 'Informasi Pribadi'}
+                {activeEditorSection === 'experience' && 'Pengalaman Kerja'}
+                {activeEditorSection === 'education' && 'Pendidikan'}
+                {activeEditorSection === 'skills' && 'Keterampilan & Bahasa'}
+                {activeEditorSection === 'awards' && 'Penghargaan & Sertifikasi'}
+              </h2>
+
+              <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+
+              {activeEditorSection === 'personal' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nama Lengkap</label>
+                    <Input
+                      value={resumeData.personalInfo.fullName}
+                      onChange={(e) => updatePersonalInfo('fullName', e.target.value)}
+                      placeholder="Nama Lengkap"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Jabatan/Posisi</label>
+                    <Input
+                      value={resumeData.personalInfo.title}
+                      onChange={(e) => updatePersonalInfo('title', e.target.value)}
+                      placeholder="Jabatan/Posisi"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <Input
+                      value={resumeData.personalInfo.email}
+                      onChange={(e) => updatePersonalInfo('email', e.target.value)}
+                      placeholder="Email"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nomor Telepon</label>
+                    <Input
+                      value={resumeData.personalInfo.phone}
+                      onChange={(e) => updatePersonalInfo('phone', e.target.value)}
+                      placeholder="Nomor Telepon"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Lokasi</label>
+                    <Input
+                      value={resumeData.personalInfo.location}
+                      onChange={(e) => updatePersonalInfo('location', e.target.value)}
+                      placeholder="Kota, Negara"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Website (Opsional)</label>
+                    <Input
+                      value={resumeData.personalInfo.website || ''}
+                      onChange={(e) => updatePersonalInfo('website', e.target.value)}
+                      placeholder="URL Website"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Ringkasan Profesional</label>
+                    <textarea
+                      value={resumeData.personalInfo.summary}
+                      onChange={(e) => updatePersonalInfo('summary', e.target.value)}
+                      placeholder="Ringkasan singkat tentang diri Anda sebagai profesional"
+                      className="w-full min-h-[100px] p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeEditorSection === 'experience' && (
+                <div className="space-y-6">
+                  {resumeData.experience.map((exp, index) => (
+                    <Card key={exp.id} className="p-4 relative">
+                      <button
+                        onClick={() => removeItem('experience', index)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Perusahaan</label>
+                          <Input
+                            value={exp.company}
+                            onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                            placeholder="Nama Perusahaan"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Posisi</label>
+                          <Input
+                            value={exp.position}
+                            onChange={(e) => updateExperience(exp.id, 'position', e.target.value)}
+                            placeholder="Posisi/Jabatan"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Tanggal Mulai</label>
+                            <Input
+                              value={exp.startDate}
+                              onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                              placeholder="Bulan Tahun"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Tanggal Selesai</label>
+                            <Input
+                              value={exp.endDate}
+                              onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                              placeholder="Bulan Tahun atau Sekarang"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Deskripsi</label>
+                          <textarea
+                            value={exp.description}
+                            onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                            placeholder="Deskripsi tanggung jawab dan pencapaian"
+                            className="w-full min-h-[100px] p-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {resumeData.experience.length === 0 && (
+                    <div className="text-center py-6 text-gray-500">
+                      <p>Belum ada pengalaman. Klik tombol "Tambah Pengalaman" untuk menambahkan.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeEditorSection === 'education' && (
+                <div className="space-y-6">
+                  {resumeData.education.map((edu, index) => (
+                    <Card key={edu.id} className="p-4 relative">
+                      <button
+                        onClick={() => removeItem('education', index)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Institusi</label>
+                          <Input
+                            value={edu.school}
+                            onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
+                            placeholder="Nama Sekolah/Universitas"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Gelar</label>
+                            <Input
+                              value={edu.degree}
+                              onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                              placeholder="Gelar"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Bidang Studi</label>
+                            <Input
+                              value={edu.field}
+                              onChange={(e) => updateEducation(edu.id, 'field', e.target.value)}
+                              placeholder="Bidang Studi"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Tanggal Mulai</label>
+                            <Input
+                              value={edu.startDate}
+                              onChange={(e) => updateEducation(edu.id, 'startDate', e.target.value)}
+                              placeholder="Bulan Tahun"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Tanggal Selesai</label>
+                            <Input
+                              value={edu.endDate}
+                              onChange={(e) => updateEducation(edu.id, 'endDate', e.target.value)}
+                              placeholder="Bulan Tahun"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Deskripsi (Opsional)</label>
+                          <textarea
+                            value={edu.description}
+                            onChange={(e) => updateEducation(edu.id, 'description', e.target.value)}
+                            placeholder="Prestasi, kegiatan, atau informasi tambahan"
+                            className="w-full min-h-[100px] p-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {resumeData.education.length === 0 && (
+                    <div className="text-center py-6 text-gray-500">
+                      <p>Belum ada pendidikan. Klik tombol "Tambah Pendidikan" untuk menambahkan.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeEditorSection === 'skills' && (
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium">Keterampilan</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => addItem('skills')}
+                        className="h-8 p-0 px-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.skills.map((skill, index) => (
+                        <div key={index} className="relative group">
+                          <Badge variant="outline" className="pr-8">
+                            <EditableField
+                              value={skill}
+                              onChange={(value) => updateSkill(index, value)}
+                            />
+                            <button
+                              onClick={() => removeItem('skills', index)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium">Bahasa</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => addItem('languages')}
+                        className="h-8 p-0 px-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.languages.map((language, index) => (
+                        <div key={index} className="relative group">
+                          <Badge variant="outline" className="pr-8">
+                            <EditableField
+                              value={language}
+                              onChange={(value) => updateLanguage(index, value)}
+                            />
+                            <button
+                              onClick={() => removeItem('languages', index)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium">Area Keahlian</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => addItem('expertise')}
+                        className="h-8 p-0 px-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.expertise && resumeData.expertise.map((item, index) => (
+                        <div key={index} className="relative group">
+                          <Badge variant="outline" className="pr-8">
+                            <EditableField
+                              value={item}
+                              onChange={(value) => updateExpertise(index, value)}
+                            />
+                            <button
+                              onClick={() => removeItem('expertise', index)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeEditorSection === 'awards' && (
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium">Sertifikasi</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => addItem('certifications')}
+                        className="h-8 p-0 px-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.certifications && resumeData.certifications.map((cert, index) => (
+                        <div key={index} className="relative group">
+                          <Badge variant="outline" className="pr-8">
+                            <EditableField
+                              value={cert}
+                              onChange={(value) => updateCertification(index, value)}
+                            />
+                            <button
+                              onClick={() => removeItem('certifications', index)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium">Penghargaan</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => addItem('awards')}
+                        className="h-8 p-0 px-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.awards && resumeData.awards.map((award, index) => (
+                        <div key={index} className="relative group">
+                          <Badge variant="outline" className="pr-8">
+                            <EditableField
+                              value={award}
+                              onChange={(value) => updateAward(index, value)}
+                            />
+                            <button
+                              onClick={() => removeItem('awards', index)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium">Pencapaian Utama</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => addItem('achievements')}
+                        className="h-8 p-0 px-2"
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Tambah
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {resumeData.achievements && resumeData.achievements.map((achievement, index) => (
+                        <Card key={index} className="p-3 relative">
+                          <button
+                            onClick={() => removeItem('achievements', index)}
+                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-xs font-medium mb-1">Judul</label>
+                              <Input
+                                value={achievement.title}
+                                onChange={(e) => updateAchievement(index, 'title', e.target.value)}
+                                placeholder="Judul Pencapaian"
+                                className="text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium mb-1">Deskripsi</label>
+                              <textarea
+                                value={achievement.description}
+                                onChange={(e) => updateAchievement(index, 'description', e.target.value)}
+                                placeholder="Deskripsi pencapaian"
+                                className="w-full min-h-[60px] p-2 text-sm border border-gray-300 rounded-md"
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <SectionManager 
+                  sections={resumeData.sections || {
+                    summary: true,
+                    expertise: true,
+                    achievements: true,
+                    experience: true,
+                    education: true,
+                    additional: true
+                  }}
+                  onToggle={toggleSection}
+                />
+              )}
+            </Card>
+          </div>
+
+          {/* Right - Preview */}
+          <div className="col-span-5 rounded-lg bg-gray-100 p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-medium text-gray-700">Pratinjau Template</h3>
+              <div className="flex items-center gap-2">
+                <button 
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setEditorZoom(Math.max(50, editorZoom - 10))}
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </button>
+                <span className="text-sm text-gray-600">{editorZoom}%</span>
+                <button 
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setEditorZoom(Math.min(150, editorZoom + 10))}
+                >
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <div 
+              className="overflow-auto bg-white shadow-md mx-auto" 
+              style={{maxHeight: 'calc(100vh - 240px)', padding: '12px'}}
+              ref={resumeRef}
+            >
+              <ResumePreview 
+                resumeData={resumeData} 
+                currentTemplate={currentTemplate} 
+                photoUrl={photoUrl} 
+                editorZoom={editorZoom} 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default ResumeEditor;
