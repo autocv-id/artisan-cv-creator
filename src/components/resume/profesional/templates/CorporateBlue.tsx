@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { ResumeData } from '@/types/resume';
+import { ResumeData, ResumeDataType } from '@/types/resume';
 
 // Tambahkan tipe untuk EditableField
 interface EditableFieldProps {
@@ -92,7 +93,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
 };
 
 interface CorporateBlueProps {
-  resumeData: ResumeData;
+  resumeData: ResumeDataType | ResumeData;
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
@@ -128,8 +129,54 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
   onAddItem,
   onRemoveItem
 }) => {
+  // Convert ResumeData to ResumeDataType if needed
+  const typedResumeData = 'personalInfo' in resumeData 
+    ? resumeData as ResumeDataType 
+    : {
+        personalInfo: {
+          fullName: (resumeData as ResumeData).basics.name,
+          title: (resumeData as ResumeData).basics.label,
+          email: (resumeData as ResumeData).basics.email,
+          phone: (resumeData as ResumeData).basics.phone,
+          location: (resumeData as ResumeData).basics.location.address,
+          summary: (resumeData as ResumeData).basics.summary,
+          website: (resumeData as ResumeData).basics.url
+        },
+        experience: (resumeData as ResumeData).work.map((job, index) => ({
+          id: index + 1,
+          company: job.company,
+          position: job.position,
+          startDate: job.startDate,
+          endDate: job.endDate,
+          description: job.summary
+        })),
+        education: (resumeData as ResumeData).education.map((edu, index) => ({
+          id: index + 1,
+          school: edu.institution,
+          degree: edu.studyType,
+          field: edu.area,
+          startDate: edu.startDate,
+          endDate: edu.endDate,
+          description: edu.description || ''
+        })),
+        skills: (resumeData as ResumeData).skills.map(s => typeof s === 'string' ? s : s.name),
+        languages: (resumeData as ResumeData).languages.map(l => typeof l === 'string' ? l : l.language),
+        certifications: (resumeData as any).certifications || [],
+        awards: (resumeData as any).awards || [],
+        expertise: (resumeData as any).expertise || [],
+        achievements: (resumeData as any).achievements || [],
+        sections: (resumeData as any).sections || {
+          summary: true,
+          expertise: true,
+          achievements: true,
+          experience: true,
+          education: true,
+          additional: true
+        }
+      };
+  
   // Inisialisasi status section jika belum ada
-  const sections = resumeData.sections || {
+  const sections = typedResumeData.sections || {
     summary: true,
     expertise: true,
     achievements: true,
@@ -247,7 +294,7 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
           <div className="flex-1">
           <h1 className="text-3xl font-bold text-blue-900">
             {renderEditableContent(
-              resumeData.basics.name,
+              typedResumeData.personalInfo.fullName,
               onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('name', value) : undefined
             )}
           </h1>
@@ -256,7 +303,7 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
             <div className="font-bold">Address:</div>
             <div>
               {renderEditableContent(
-                `${resumeData.basics.location.address}, ${resumeData.basics.location.city}, ${resumeData.basics.location.region} ${resumeData.basics.location.postalCode}`,
+                typedResumeData.personalInfo.location,
                 onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('location', value) : undefined
               )}
             </div>
@@ -264,7 +311,7 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
             <div className="font-bold">Phone:</div>
             <div>
               {renderEditableContent(
-                resumeData.basics.phone,
+                typedResumeData.personalInfo.phone,
                 onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('phone', value) : undefined
               )}
             </div>
@@ -272,17 +319,17 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
             <div className="font-bold">Email:</div>
             <div>
               {renderEditableContent(
-                resumeData.basics.email,
+                typedResumeData.personalInfo.email,
                 onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('email', value) : undefined
               )}
             </div>
             
-            {resumeData.basics.url && (
+            {typedResumeData.personalInfo.website && (
               <>
                 <div className="font-bold">Website:</div>
                 <div>
                   {renderEditableContent(
-                    resumeData.basics.url,
+                    typedResumeData.personalInfo.website,
                     onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('url', value) : undefined
                   )}
                 </div>
@@ -293,12 +340,12 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
       </div>
       
       {/* Summary Section */}
-      {resumeData.basics.summary && (
+      {typedResumeData.personalInfo.summary && (
         <div className="mb-6 relative group">
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">SUMMARY</h2>
           <p className="text-sm">
             {renderEditableContent(
-              resumeData.basics.summary,
+              typedResumeData.personalInfo.summary,
               onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('summary', value) : undefined,
               true
             )}
@@ -307,17 +354,17 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
       )}
       
       {/* Work Experience Section */}
-      {sections.experience && resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
-            <div className="mb-6 relative group">
-              {renderSectionToggle('experience', sections.experience)}
+      {sections.experience && typedResumeData.experience && typedResumeData.experience.length > 0 && typedResumeData.experience.some(exp => exp.company) && (
+        <div className="mb-6 relative group">
+          {renderSectionToggle('experience', sections.experience)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             WORK EXPERIENCE
           </h2>
-          {resumeData.experience
+          {typedResumeData.experience
             .filter(exp => exp.company)
             .map((exp, index) => (
-                <div key={exp.id} className="mb-4">
-                  <div className="flex justify-between items-start">
+              <div key={exp.id} className="mb-4">
+                <div className="flex justify-between items-start">
                   <h3 className="font-bold text-base">
                     {renderEditableContent(
                       exp.position || 'Position',
@@ -338,7 +385,7 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
                       onUpdateExperience ? (value) => onUpdateExperience(exp.id, 'endDate', value) : undefined
                     )}
                   </span>
-                  </div>
+                </div>
                 <div className="mt-2">
                   {renderEditableContent(
                     exp.description,
@@ -348,24 +395,24 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
                   )}
                 </div>
                 {renderSectionControls('experience', index)}
-                </div>
-              ))}
+              </div>
+            ))}
           {renderSectionControls('experience')}
-            </div>
-          )}
+        </div>
+      )}
           
       {/* Education Section */}
-      {sections.education && resumeData.education.length > 0 && resumeData.education.some(edu => edu.school) && (
-            <div className="mb-6 relative group">
-              {renderSectionToggle('education', sections.education)}
+      {sections.education && typedResumeData.education && typedResumeData.education.length > 0 && typedResumeData.education.some(edu => edu.school) && (
+        <div className="mb-6 relative group">
+          {renderSectionToggle('education', sections.education)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             EDUCATION
           </h2>
-          {resumeData.education
+          {typedResumeData.education
             .filter(edu => edu.school)
             .map((edu, index) => (
-                <div key={edu.id} className="mb-4">
-                  <div className="flex justify-between items-start">
+              <div key={edu.id} className="mb-4">
+                <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-base">
                       {renderEditableContent(
@@ -404,8 +451,8 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
                       true,
                       "text-sm"
                     )}
-            </div>
-          )}
+                  </div>
+                )}
                 {renderSectionControls('education', index)}
               </div>
             ))}
@@ -414,14 +461,14 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
       )}
 
       {/* Skills Section */}
-      {sections.skills && resumeData.skills.length > 0 && (
-            <div className="mb-6 relative group">
+      {sections.skills && typedResumeData.skills && typedResumeData.skills.length > 0 && (
+        <div className="mb-6 relative group">
           {renderSectionToggle('skills', sections.skills)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             SKILLS
           </h2>
           <div className="grid grid-cols-2 gap-4">
-                {resumeData.skills.map((skill, index) => (
+            {typedResumeData.skills.map((skill, index) => (
               <div key={index} className="flex items-center">
                 <span className="text-sm">
                   {renderEditableContent(
@@ -434,18 +481,18 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
             ))}
           </div>
           {renderSectionControls('skills')}
-            </div>
-          )}
+        </div>
+      )}
           
       {/* Languages Section */}
-      {sections.languages && resumeData.languages.some(lang => lang) && (
+      {sections.languages && typedResumeData.languages && typedResumeData.languages.some(lang => lang) && (
         <div className="mb-6 relative group">
           {renderSectionToggle('languages', sections.languages)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             LANGUAGES
           </h2>
           <div className="grid grid-cols-2 gap-4">
-            {resumeData.languages.filter(l => l).map((lang, index) => (
+            {typedResumeData.languages.filter(l => l).map((lang, index) => (
               <div key={index} className="flex items-center">
                 <span className="text-sm">
                   {renderEditableContent(
@@ -458,18 +505,18 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
             ))}
           </div>
           {renderSectionControls('languages')}
-                </div>
-              )}
+        </div>
+      )}
               
       {/* Certifications Section */}
-      {sections.certifications && resumeData.certifications.some(cert => cert) && (
+      {sections.certifications && typedResumeData.certifications && typedResumeData.certifications.some(cert => cert) && (
         <div className="mb-6 relative group">
           {renderSectionToggle('certifications', sections.certifications)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             CERTIFICATIONS
           </h2>
           <div className="grid grid-cols-1 gap-2">
-            {resumeData.certifications.filter(c => c).map((cert, index) => (
+            {typedResumeData.certifications.filter(c => c).map((cert, index) => (
               <div key={index} className="flex items-center">
                 <span className="text-sm">
                   {renderEditableContent(
@@ -482,18 +529,18 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
             ))}
           </div>
           {renderSectionControls('certifications')}
-                </div>
-              )}
+        </div>
+      )}
               
       {/* Awards Section */}
-      {sections.awards && resumeData.awards.some(award => award) && (
+      {sections.awards && typedResumeData.awards && typedResumeData.awards.some(award => award) && (
         <div className="mb-6 relative group">
           {renderSectionToggle('awards', sections.awards)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             AWARDS & ACHIEVEMENTS
           </h2>
           <div className="grid grid-cols-1 gap-2">
-            {resumeData.awards.filter(a => a).map((award, index) => (
+            {typedResumeData.awards.filter(a => a).map((award, index) => (
               <div key={index} className="flex items-center">
                 <span className="text-sm">
                   {renderEditableContent(
@@ -504,7 +551,7 @@ const CorporateBlue: React.FC<CorporateBlueProps> = ({
                 {renderSectionControls('awards', index)}
               </div>
             ))}
-                </div>
+          </div>
           {renderSectionControls('awards')}
         </div>
       )}

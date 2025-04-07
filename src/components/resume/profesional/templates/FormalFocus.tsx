@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResumeData } from '@/types/resume';
+import { ResumeData, ResumeDataType } from '@/types/resume';
 
 // Tambahkan tipe untuk EditableField
 interface EditableFieldProps {
@@ -91,52 +91,6 @@ const EditableField: React.FC<EditableFieldProps> = ({
   );
 };
 
-interface ResumeDataType {
-  personalInfo: {
-    fullName: string;
-    email: string;
-    phone: string;
-    location: string;
-    title: string;
-    summary: string;
-    website?: string;
-  };
-  sections?: {
-    summary?: boolean;
-    expertise?: boolean;
-    achievements?: boolean;
-    experience?: boolean;
-    education?: boolean;
-    additional?: boolean;
-  };
-  experience: Array<{
-    id: number;
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-  }>;
-  education: Array<{
-    id: number;
-    school: string;
-    degree: string;
-    field: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-  }>;
-  skills: string[];
-  languages: string[];
-  certifications?: string[];
-  awards?: string[];
-  expertise?: string[];
-  achievements?: Array<{
-    title: string;
-    description: string;
-  }>;
-}
-
 interface FormalFocusProps {
   resumeData: ResumeDataType;
   photoUrl?: string;
@@ -174,18 +128,15 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
   onAddItem,
   onRemoveItem
 }) => {
-  // Handle photo upload
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && onPhotoUpload) {
       onPhotoUpload(e.target.files[0]);
     }
   };
 
-  // Render tombol tambah dan hapus untuk section
   const renderSectionControls = (section: string, index?: number) => {
     if (!isEditable) return null;
     
-    // Jika index tidak ada, ini adalah section header, tampilkan tombol tambah
     if (index === undefined) {
       return onAddItem ? (
         <button 
@@ -198,7 +149,6 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
       ) : null;
     }
     
-    // Jika index ada, ini adalah item dalam section, tampilkan tombol hapus
     return onRemoveItem ? (
       <button 
         onClick={() => onRemoveItem(section, index)}
@@ -208,6 +158,25 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
         - Remove
       </button>
     ) : null;
+  };
+
+  const renderEditableContent = (
+    value: string, 
+    onChange?: (value: string) => void, 
+    isMultiline: boolean = false,
+    className: string = ""
+  ) => {
+    if (isEditable && onChange) {
+      return (
+        <EditableField 
+          value={value} 
+          onChange={onChange} 
+          isMultiline={isMultiline}
+          className={className}
+        />
+      );
+    }
+    return <span className={className}>{value}</span>;
   };
 
   return (
@@ -427,4 +396,4 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
   );
 };
 
-export default FormalFocus; 
+export default FormalFocus;
