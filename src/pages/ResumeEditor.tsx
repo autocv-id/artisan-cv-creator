@@ -1416,7 +1416,7 @@ const ResumeEditor = () => {
                           {resumeData.languages.map((language, index) => (
                             <div key={index} className="flex items-center gap-2">
                               <Input
-                                value={typeof language === 'string' ? language : language.language}
+                                value={typeof language === 'string' ? language : ''}
                                 onChange={(e) => updateLanguage(index, e.target.value)}
                                 placeholder="Bahasa"
                                 className="flex-grow"
