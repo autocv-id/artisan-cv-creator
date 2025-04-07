@@ -29,6 +29,10 @@ import { Template } from '@/types/templates';
 import ReactDOM from 'react-dom/client';
 import React from 'react';
 import { ResumeDataType, convertToResumeData, convertToResumeDataType, ResumeData } from '@/types/resume';
+import PrimeSuiteTemplate from '@/components/resume/profesional/templates/primesuite';
+import ExecutiveEdge from '@/components/resume/profesional/templates/ExecutiveEdge';
+import CorporateBlue from '@/components/resume/profesional/templates/CorporateBlue';
+import FormalFocus from '@/components/resume/profesional/templates/FormalFocus';
 
 const dummyResumeData: ResumeDataType = {
   personalInfo: {
