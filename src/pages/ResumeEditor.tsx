@@ -924,7 +924,684 @@ const ResumeEditor = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        {/* UI components */}
+        <div className="flex justify-between mb-6 items-center">
+          <div className="flex items-center space-x-2">
+            <Input 
+              value={resumeTitle} 
+              onChange={(e) => setResumeTitle(e.target.value)}
+              className="font-bold text-xl w-64 border-none shadow-none focus-visible:ring-0 px-0"
+              placeholder="Untitled Resume"
+            />
+            {isSaving ? (
+              <Badge variant="outline" className="bg-gray-100 animate-pulse">Saving...</Badge>
+            ) : (
+              <Badge variant="outline" className="bg-gray-100">Edited</Badge>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSave} 
+              disabled={isSaving}
+              className="flex items-center gap-1"
+            >
+              <Save className="h-4 w-4" />
+              Save
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownload} 
+              disabled={isDownloading}
+              className="flex items-center gap-1"
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </Button>
+            <Link to="/templates">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+              >
+                Templates
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <Tabs defaultValue="preview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 w-64 mb-4">
+            <TabsTrigger value="preview" className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              Preview
+            </TabsTrigger>
+            <TabsTrigger value="edit" className="flex items-center gap-1">
+              <Edit className="h-4 w-4" />
+              Edit
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="preview" className="mt-0">
+            <div className="bg-gray-100 p-6 rounded-lg min-h-[600px] flex justify-center">
+              <div 
+                className="bg-white shadow-lg overflow-hidden max-w-full"
+                style={{ 
+                  width: `${21 * (editorZoom / 100)}cm`,
+                  minHeight: `${29.7 * (editorZoom / 100)}cm`,
+                  transform: `scale(${editorZoom / 100})`,
+                  transformOrigin: 'top center',
+                }}
+                ref={resumeRef}
+              >
+                {currentTemplate === 'prime-suite' ? (
+                  <PrimeSuiteTemplate resumeData={resumeData} />
+                ) : currentTemplate === 'executive-edge' ? (
+                  <ExecutiveEdge resumeData={resumeData} photoUrl={photoUrl || undefined} />
+                ) : currentTemplate === 'corporate-blue' ? (
+                  <CorporateBlue resumeData={resumeData} photoUrl={photoUrl || undefined} />
+                ) : currentTemplate === 'formal-focus' ? (
+                  <FormalFocus resumeData={resumeData} photoUrl={photoUrl || undefined} />
+                ) : (
+                  <FormalFocus resumeData={resumeData} photoUrl={photoUrl || undefined} />
+                )}
+              </div>
+            </div>
+            <div className="flex justify-center mt-4 space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEditorZoom(Math.max(30, editorZoom - 10))}
+                className="flex items-center gap-1"
+              >
+                <ChevronDown className="h-4 w-4" />
+                Zoom Out
+              </Button>
+              <div className="bg-white rounded border px-3 py-1.5 text-sm">
+                {editorZoom}%
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEditorZoom(Math.min(200, editorZoom + 10))}
+                className="flex items-center gap-1"
+              >
+                <ChevronUp className="h-4 w-4" />
+                Zoom In
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleDownload()}
+                className="flex items-center gap-1"
+              >
+                <Printer className="h-4 w-4" />
+                Print
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="edit" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="md:col-span-1">
+                <Tabs 
+                  defaultValue="personal" 
+                  value={activeEditorSection}
+                  onValueChange={setActiveEditorSection}
+                  orientation="vertical" 
+                  className="w-full"
+                >
+                  <TabsList className="flex flex-col items-stretch h-auto bg-white p-0 rounded-md shadow-sm">
+                    <TabsTrigger 
+                      value="personal" 
+                      className="justify-start px-4 py-3 data-[state=active]:bg-gray-100"
+                    >
+                      Informasi Pribadi
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="experience" 
+                      className="justify-start px-4 py-3 data-[state=active]:bg-gray-100"
+                    >
+                      Pengalaman
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="education" 
+                      className="justify-start px-4 py-3 data-[state=active]:bg-gray-100"
+                    >
+                      Pendidikan
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="skills" 
+                      className="justify-start px-4 py-3 data-[state=active]:bg-gray-100"
+                    >
+                      Keterampilan
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="awards" 
+                      className="justify-start px-4 py-3 data-[state=active]:bg-gray-100"
+                    >
+                      Penghargaan & Sertifikasi
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="sections" 
+                      className="justify-start px-4 py-3 data-[state=active]:bg-gray-100"
+                    >
+                      Manajemen Bagian
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {templateRequiresPhoto(currentTemplate) && (
+                  <Card className="p-4 mt-4 bg-white shadow-sm">
+                    <h3 className="font-medium text-sm mb-3 text-gray-700">Foto Profil</h3>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-24 h-24 bg-gray-100 rounded-full overflow-hidden relative flex items-center justify-center border">
+                        {photoUrl ? (
+                          <img 
+                            src={photoUrl} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Camera className="h-8 w-8 text-gray-400" />
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      ref={fileInputRef}
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-1"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Foto
+                    </Button>
+                  </Card>
+                )}
+              </div>
+
+              <div className="md:col-span-3">
+                <Card className="p-6 bg-white shadow-sm">
+                  <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+
+                  {activeEditorSection === 'personal' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nama Lengkap
+                        </label>
+                        <Input
+                          value={resumeData.personalInfo.fullName}
+                          onChange={(e) => updatePersonalInfo('fullName', e.target.value)}
+                          placeholder="Nama Lengkap"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Posisi / Jabatan
+                        </label>
+                        <Input
+                          value={resumeData.personalInfo.title}
+                          onChange={(e) => updatePersonalInfo('title', e.target.value)}
+                          placeholder="Posisi / Jabatan"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                          </label>
+                          <Input
+                            value={resumeData.personalInfo.email}
+                            onChange={(e) => updatePersonalInfo('email', e.target.value)}
+                            placeholder="Email"
+                            type="email"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Telepon
+                          </label>
+                          <Input
+                            value={resumeData.personalInfo.phone}
+                            onChange={(e) => updatePersonalInfo('phone', e.target.value)}
+                            placeholder="Telepon"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Lokasi
+                          </label>
+                          <Input
+                            value={resumeData.personalInfo.location}
+                            onChange={(e) => updatePersonalInfo('location', e.target.value)}
+                            placeholder="Kota, Negara"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Website
+                          </label>
+                          <Input
+                            value={resumeData.personalInfo.website}
+                            onChange={(e) => updatePersonalInfo('website', e.target.value)}
+                            placeholder="www.example.com"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ringkasan Profesional
+                        </label>
+                        <textarea
+                          value={resumeData.personalInfo.summary}
+                          onChange={(e) => updatePersonalInfo('summary', e.target.value)}
+                          placeholder="Ringkasan singkat tentang pengalaman dan kualifikasi profesional Anda"
+                          className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeEditorSection === 'experience' && (
+                    <div className="space-y-6">
+                      {resumeData.experience.map((exp, index) => (
+                        <Card key={exp.id} className="p-4 border border-gray-200 relative group">
+                          <button
+                            onClick={() => removeItem('experience', index)}
+                            className="absolute right-2 top-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <div className="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Perusahaan
+                              </label>
+                              <Input
+                                value={exp.company}
+                                onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                                placeholder="Nama Perusahaan"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Posisi
+                              </label>
+                              <Input
+                                value={exp.position}
+                                onChange={(e) => updateExperience(exp.id, 'position', e.target.value)}
+                                placeholder="Posisi / Jabatan"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tanggal Mulai
+                              </label>
+                              <Input
+                                value={exp.startDate}
+                                onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                                placeholder="Contoh: Jan 2020"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tanggal Selesai
+                              </label>
+                              <Input
+                                value={exp.endDate}
+                                onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                                placeholder="Contoh: Present"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Deskripsi
+                            </label>
+                            <textarea
+                              value={exp.description}
+                              onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                              placeholder="Deskripsi tugas dan pencapaian"
+                              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      <Button
+                        variant="outline"
+                        onClick={() => addItem('experience')}
+                        className="w-full flex items-center justify-center gap-1"
+                      >
+                        <Plus className="h-4 w-4" /> Tambah Pengalaman
+                      </Button>
+                    </div>
+                  )}
+
+                  {activeEditorSection === 'education' && (
+                    <div className="space-y-6">
+                      {resumeData.education.map((edu, index) => (
+                        <Card key={edu.id} className="p-4 border border-gray-200 relative group">
+                          <button
+                            onClick={() => removeItem('education', index)}
+                            className="absolute right-2 top-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <div className="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Institusi
+                              </label>
+                              <Input
+                                value={edu.school}
+                                onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
+                                placeholder="Nama Institusi"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Gelar
+                              </label>
+                              <Input
+                                value={edu.degree}
+                                onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                                placeholder="Gelar"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 mb-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Bidang Studi
+                              </label>
+                              <Input
+                                value={edu.field}
+                                onChange={(e) => updateEducation(edu.id, 'field', e.target.value)}
+                                placeholder="Bidang Studi"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tanggal Mulai
+                              </label>
+                              <Input
+                                value={edu.startDate}
+                                onChange={(e) => updateEducation(edu.id, 'startDate', e.target.value)}
+                                placeholder="Contoh: Aug 2016"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tanggal Selesai
+                              </label>
+                              <Input
+                                value={edu.endDate}
+                                onChange={(e) => updateEducation(edu.id, 'endDate', e.target.value)}
+                                placeholder="Contoh: Jun 2020"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Deskripsi
+                            </label>
+                            <textarea
+                              value={edu.description}
+                              onChange={(e) => updateEducation(edu.id, 'description', e.target.value)}
+                              placeholder="Deskripsi, pencapaian, atau informasi tambahan"
+                              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      <Button
+                        variant="outline"
+                        onClick={() => addItem('education')}
+                        className="w-full flex items-center justify-center gap-1"
+                      >
+                        <Plus className="h-4 w-4" /> Tambah Pendidikan
+                      </Button>
+                    </div>
+                  )}
+
+                  {activeEditorSection === 'skills' && (
+                    <div className="space-y-6">
+                      <Card className="p-4 border border-gray-200">
+                        <h3 className="font-medium text-sm mb-3 text-gray-700">Keterampilan</h3>
+                        <div className="space-y-2">
+                          {resumeData.skills.map((skill, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Input
+                                value={skill}
+                                onChange={(e) => updateSkill(index, e.target.value)}
+                                placeholder="Keterampilan"
+                                className="flex-grow"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem('skills', index)}
+                                className="h-9 w-9 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addItem('skills')}
+                            className="w-full flex items-center justify-center gap-1 mt-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Keterampilan
+                          </Button>
+                        </div>
+                      </Card>
+                      
+                      <Card className="p-4 border border-gray-200">
+                        <h3 className="font-medium text-sm mb-3 text-gray-700">Bahasa</h3>
+                        <div className="space-y-2">
+                          {resumeData.languages.map((language, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Input
+                                value={typeof language === 'string' ? language : language.language}
+                                onChange={(e) => updateLanguage(index, e.target.value)}
+                                placeholder="Bahasa"
+                                className="flex-grow"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem('languages', index)}
+                                className="h-9 w-9 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addItem('languages')}
+                            className="w-full flex items-center justify-center gap-1 mt-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Bahasa
+                          </Button>
+                        </div>
+                      </Card>
+                      
+                      <Card className="p-4 border border-gray-200">
+                        <h3 className="font-medium text-sm mb-3 text-gray-700">Area Keahlian</h3>
+                        <div className="space-y-2">
+                          {(resumeData.expertise || []).map((expertise, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Input
+                                value={expertise}
+                                onChange={(e) => updateExpertise(index, e.target.value)}
+                                placeholder="Area Keahlian"
+                                className="flex-grow"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem('expertise', index)}
+                                className="h-9 w-9 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addItem('expertise')}
+                            className="w-full flex items-center justify-center gap-1 mt-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Area Keahlian
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                  
+                  {activeEditorSection === 'awards' && (
+                    <div className="space-y-6">
+                      <Card className="p-4 border border-gray-200">
+                        <h3 className="font-medium text-sm mb-3 text-gray-700">Sertifikasi</h3>
+                        <div className="space-y-2">
+                          {(resumeData.certifications || []).map((cert, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Input
+                                value={cert}
+                                onChange={(e) => updateCertification(index, e.target.value)}
+                                placeholder="Sertifikasi"
+                                className="flex-grow"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem('certifications', index)}
+                                className="h-9 w-9 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addItem('certifications')}
+                            className="w-full flex items-center justify-center gap-1 mt-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Sertifikasi
+                          </Button>
+                        </div>
+                      </Card>
+                      
+                      <Card className="p-4 border border-gray-200">
+                        <h3 className="font-medium text-sm mb-3 text-gray-700">Penghargaan</h3>
+                        <div className="space-y-2">
+                          {(resumeData.awards || []).map((award, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Input
+                                value={award}
+                                onChange={(e) => updateAward(index, e.target.value)}
+                                placeholder="Penghargaan"
+                                className="flex-grow"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem('awards', index)}
+                                className="h-9 w-9 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addItem('awards')}
+                            className="w-full flex items-center justify-center gap-1 mt-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Penghargaan
+                          </Button>
+                        </div>
+                      </Card>
+                      
+                      <Card className="p-4 border border-gray-200">
+                        <h3 className="font-medium text-sm mb-3 text-gray-700">Pencapaian</h3>
+                        <div className="space-y-4">
+                          {(resumeData.achievements || []).map((achievement, index) => (
+                            <div key={index} className="border border-gray-200 rounded-md p-3 relative group">
+                              <button
+                                onClick={() => removeItem('achievements', index)}
+                                className="absolute right-2 top-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                              <div className="mb-2">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Judul
+                                </label>
+                                <Input
+                                  value={achievement.title}
+                                  onChange={(e) => updateAchievement(index, 'title', e.target.value)}
+                                  placeholder="Judul Pencapaian"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Deskripsi
+                                </label>
+                                <textarea
+                                  value={achievement.description}
+                                  onChange={(e) => updateAchievement(index, 'description', e.target.value)}
+                                  placeholder="Deskripsi pencapaian"
+                                  className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-16 text-sm"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addItem('achievements')}
+                            className="w-full flex items-center justify-center gap-1 mt-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Pencapaian
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                  
+                  {activeEditorSection === 'sections' && (
+                    <SectionManager 
+                      sections={resumeData.sections || {
+                        summary: true,
+                        expertise: true,
+                        achievements: true,
+                        experience: true,
+                        education: true,
+                        additional: true
+                      }} 
+                      onToggle={toggleSection} 
+                    />
+                  )}
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
