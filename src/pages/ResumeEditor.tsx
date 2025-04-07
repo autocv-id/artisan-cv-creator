@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -11,6 +10,9 @@ import {
   Save, 
   Camera,
   Plus,
+  ArrowLeft,
+  Minus,
+  ZoomIn,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -258,7 +260,7 @@ const ResumeEditor = () => {
           .from('resumes')
           .update({
             title: resumeTitle,
-            content: apiResumeData as any,
+            content: apiResumeData as Record<string, unknown>,
             template_id: currentTemplate,
             updated_at: new Date().toISOString(),
           })
@@ -272,7 +274,7 @@ const ResumeEditor = () => {
           .insert({
             user_id: user.id,
             title: resumeTitle,
-            content: apiResumeData as any,
+            content: apiResumeData as Record<string, unknown>,
             template_id: currentTemplate,
           });
 
@@ -529,125 +531,154 @@ const ResumeEditor = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center">
-            <Input
-              value={resumeTitle}
-              onChange={(e) => setResumeTitle(e.target.value)}
-              className="max-w-[300px] text-lg font-medium"
-            />
-            {isSaving ? (
-              <span className="ml-3 text-sm text-gray-500">Saving...</span>
-            ) : null}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!templateRequiresPhoto(currentTemplate)}
-              className="flex items-center gap-1"
-            >
-              <Camera className="h-4 w-4" /> Add Photo
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePhotoUpload}
-              accept="image/*"
-              className="hidden"
-            />
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="flex items-center gap-1"
-            >
-              <Download className="h-4 w-4" /> {isDownloading ? 'Downloading...' : 'Download PDF'}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-1"
-            >
-              <Save className="h-4 w-4" /> Save
-            </Button>
+      <div className="container mx-auto p-4 lg:px-6 lg:py-6">
+        {/* Header section with back button, title and action buttons */}
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/dashboard')}
+                className="h-9 w-9 rounded-full"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <Input
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+                className="max-w-[300px] text-lg font-medium border-none focus-visible:ring-transparent pl-0"
+                placeholder="Untitled Resume"
+              />
+              {isSaving && (
+                <span className="text-sm text-muted-foreground animate-pulse">Menyimpan...</span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!templateRequiresPhoto(currentTemplate)}
+                className="flex items-center gap-1 h-9"
+              >
+                <Camera className="h-4 w-4" /> 
+                <span className="hidden sm:inline">Tambah Foto</span>
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="flex items-center gap-1 h-9"
+              >
+                <Download className="h-4 w-4" /> 
+                <span className="hidden sm:inline">
+                  {isDownloading ? 'Mengunduh...' : 'Unduh PDF'}
+                </span>
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center gap-1 h-9"
+              >
+                <Save className="h-4 w-4" /> 
+                <span className="hidden sm:inline">Simpan</span>
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-4 lg:col-span-3">
-            <div className="sticky top-24">
-              <Card className="p-4 mb-4 bg-white">
-                <Tabs value={activeEditorSection} onValueChange={setActiveEditorSection}>
-                  <TabsList className="mb-4 w-full">
-                    <TabsTrigger value="personal" className="flex-1">Personal</TabsTrigger>
-                    <TabsTrigger value="experience" className="flex-1">Experience</TabsTrigger>
-                    <TabsTrigger value="education" className="flex-1">Education</TabsTrigger>
-                    <TabsTrigger value="skills" className="flex-1">Skills</TabsTrigger>
-                    <TabsTrigger value="awards" className="flex-1">Awards</TabsTrigger>
+        {/* Main content with editor and preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Editor section */}
+          <div className="lg:col-span-4 xl:col-span-4 order-2 lg:order-1">
+            <div className="sticky top-20 space-y-4">
+              <Card className="overflow-hidden shadow-sm border">
+                <Tabs value={activeEditorSection} onValueChange={setActiveEditorSection} className="w-full">
+                  <TabsList className="grid grid-cols-5 w-full rounded-none bg-muted/50">
+                    <TabsTrigger value="personal" className="h-12 text-xs sm:text-sm font-medium">Personal</TabsTrigger>
+                    <TabsTrigger value="experience" className="h-12 text-xs sm:text-sm font-medium">Experience</TabsTrigger>
+                    <TabsTrigger value="education" className="h-12 text-xs sm:text-sm font-medium">Education</TabsTrigger>
+                    <TabsTrigger value="skills" className="h-12 text-xs sm:text-sm font-medium">Skills</TabsTrigger>
+                    <TabsTrigger value="awards" className="h-12 text-xs sm:text-sm font-medium">Awards</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="personal">
-                    <PersonalInfoForm
-                      fullName={resumeData.personalInfo.fullName}
-                      title={resumeData.personalInfo.title}
-                      email={resumeData.personalInfo.email}
-                      phone={resumeData.personalInfo.phone}
-                      location={resumeData.personalInfo.location}
-                      website={resumeData.personalInfo.website}
-                      summary={resumeData.personalInfo.summary}
-                      updateField={updatePersonalInfo}
-                    />
-                  </TabsContent>
+                  <div className="p-4 [&_input]:font-normal [&_textarea]:font-normal">
+                    <TabsContent value="personal" className="mt-0">
+                      <PersonalInfoForm
+                        fullName={resumeData.personalInfo.fullName}
+                        title={resumeData.personalInfo.title}
+                        email={resumeData.personalInfo.email}
+                        phone={resumeData.personalInfo.phone}
+                        location={resumeData.personalInfo.location}
+                        website={resumeData.personalInfo.website}
+                        summary={resumeData.personalInfo.summary}
+                        updateField={updatePersonalInfo}
+                      />
+                    </TabsContent>
 
-                  <TabsContent value="experience">
-                    <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <ExperienceForm
-                      experiences={resumeData.experience}
-                      updateExperience={updateExperience}
-                      removeItem={(index) => removeItem('experience', index)}
-                    />
-                  </TabsContent>
+                    <TabsContent value="experience" className="mt-0">
+                      <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+                      <div className="mt-4">
+                        <ExperienceForm
+                          experiences={resumeData.experience}
+                          updateExperience={updateExperience}
+                          removeItem={(index) => removeItem('experience', index)}
+                        />
+                      </div>
+                    </TabsContent>
 
-                  <TabsContent value="education">
-                    <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <EducationForm
-                      educations={resumeData.education}
-                      updateEducation={updateEducation}
-                      removeItem={(index) => removeItem('education', index)}
-                    />
-                  </TabsContent>
+                    <TabsContent value="education" className="mt-0">
+                      <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+                      <div className="mt-4">
+                        <EducationForm
+                          educations={resumeData.education}
+                          updateEducation={updateEducation}
+                          removeItem={(index) => removeItem('education', index)}
+                        />
+                      </div>
+                    </TabsContent>
 
-                  <TabsContent value="skills">
-                    <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <SkillsForm
-                      skills={resumeData.skills}
-                      languages={resumeData.languages}
-                      expertise={resumeData.expertise || []}
-                      updateSkill={updateSkill}
-                      updateLanguage={updateLanguage}
-                      updateExpertise={updateExpertise}
-                      removeSkill={(index) => removeItem('skills', index)}
-                      removeLanguage={(index) => removeItem('languages', index)}
-                      removeExpertise={(index) => removeItem('expertise', index)}
-                    />
-                  </TabsContent>
+                    <TabsContent value="skills" className="mt-0">
+                      <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+                      <div className="mt-4">
+                        <SkillsForm
+                          skills={resumeData.skills}
+                          languages={resumeData.languages}
+                          expertise={resumeData.expertise || []}
+                          updateSkill={updateSkill}
+                          updateLanguage={updateLanguage}
+                          updateExpertise={updateExpertise}
+                          removeSkill={(index) => removeItem('skills', index)}
+                          removeLanguage={(index) => removeItem('languages', index)}
+                          removeExpertise={(index) => removeItem('expertise', index)}
+                        />
+                      </div>
+                    </TabsContent>
 
-                  <TabsContent value="awards">
-                    <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
-                    <AwardsForm
-                      awards={resumeData.awards || []}
-                      certifications={resumeData.certifications || []}
-                      achievements={resumeData.achievements || []}
-                      updateAward={updateAward}
-                      updateCertification={updateCertification}
-                      updateAchievement={updateAchievement}
-                      removeAward={(index) => removeItem('awards', index)}
-                      removeCertification={(index) => removeItem('certifications', index)}
-                      removeAchievement={(index) => removeItem('achievements', index)}
-                    />
-                  </TabsContent>
+                    <TabsContent value="awards" className="mt-0">
+                      <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+                      <div className="mt-4">
+                        <AwardsForm
+                          awards={resumeData.awards || []}
+                          certifications={resumeData.certifications || []}
+                          achievements={resumeData.achievements || []}
+                          updateAward={updateAward}
+                          updateCertification={updateCertification}
+                          updateAchievement={updateAchievement}
+                          removeAward={(index) => removeItem('awards', index)}
+                          removeCertification={(index) => removeItem('certifications', index)}
+                          removeAchievement={(index) => removeItem('achievements', index)}
+                        />
+                      </div>
+                    </TabsContent>
+                  </div>
                 </Tabs>
               </Card>
 
@@ -655,37 +686,49 @@ const ResumeEditor = () => {
             </div>
           </div>
 
-          <div className="md:col-span-8 lg:col-span-9 overflow-auto">
-            <div className="sticky top-24 flex justify-between mb-4 bg-white p-3 rounded-lg border shadow-sm">
-              <div className="flex gap-2 items-center">
-                <div className="text-sm font-medium">Zoom:</div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditorZoom(Math.max(50, editorZoom - 10))}
-                  className="h-8 w-8 p-0"
-                >
-                  -
-                </Button>
-                <span className="text-sm w-10 text-center">{editorZoom}%</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditorZoom(Math.min(150, editorZoom + 10))}
-                  className="h-8 w-8 p-0"
-                >
-                  +
-                </Button>
+          {/* Preview section */}
+          <div className="lg:col-span-8 xl:col-span-8 order-1 lg:order-2">
+            <div className="sticky top-20 space-y-4">
+              <Card className="p-3 shadow-sm border flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Preview
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Zoom:</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setEditorZoom(Math.max(50, editorZoom - 10))}
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="text-sm w-10 text-center">{editorZoom}%</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setEditorZoom(Math.min(150, editorZoom + 10))}
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </Card>
+              
+              <div className="bg-gray-100 rounded-lg p-6 flex justify-center overflow-auto" ref={resumeRef}>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-[500px]">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <ResumePreview
+                    resumeData={resumeData}
+                    currentTemplate={currentTemplate}
+                    photoUrl={photoUrl}
+                    editorZoom={editorZoom}
+                  />
+                )}
               </div>
-            </div>
-            
-            <div className="mt-4 flex justify-center" ref={resumeRef}>
-              <ResumePreview
-                resumeData={resumeData}
-                currentTemplate={currentTemplate}
-                photoUrl={photoUrl}
-                editorZoom={editorZoom}
-              />
             </div>
           </div>
         </div>
