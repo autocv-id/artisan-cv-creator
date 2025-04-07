@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ResumeData, ResumeDataType } from '@/types/resume';
 
@@ -92,7 +93,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
 };
 
 interface FormalFocusProps {
-  resumeData: ResumeDataType;
+  resumeData: ResumeDataType | ResumeData;
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
@@ -128,6 +129,56 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
   onAddItem,
   onRemoveItem
 }) => {
+  // Convert ResumeData to ResumeDataType if needed
+  const typedResumeData = 'personalInfo' in resumeData 
+    ? resumeData as ResumeDataType 
+    : {
+        personalInfo: {
+          fullName: (resumeData as ResumeData).basics.name,
+          title: (resumeData as ResumeData).basics.label,
+          email: (resumeData as ResumeData).basics.email,
+          phone: (resumeData as ResumeData).basics.phone,
+          location: (resumeData as ResumeData).basics.location.address,
+          summary: (resumeData as ResumeData).basics.summary,
+          website: (resumeData as ResumeData).basics.url
+        },
+        experience: (resumeData as ResumeData).work.map((job, index) => ({
+          id: index + 1,
+          company: job.company,
+          position: job.position,
+          startDate: job.startDate,
+          endDate: job.endDate,
+          description: job.summary
+        })),
+        education: (resumeData as ResumeData).education.map((edu, index) => ({
+          id: index + 1,
+          school: edu.school || edu.institution,
+          degree: edu.degree || edu.studyType,
+          field: edu.field || edu.area,
+          startDate: edu.startDate,
+          endDate: edu.endDate,
+          description: edu.description || ''
+        })),
+        skills: Array.isArray((resumeData as ResumeData).skills) 
+          ? (resumeData as ResumeData).skills.map(s => typeof s === 'string' ? s : s.name) 
+          : [],
+        languages: Array.isArray((resumeData as ResumeData).languages) 
+          ? (resumeData as ResumeData).languages.map(l => typeof l === 'string' ? l : l.language) 
+          : [],
+        certifications: (resumeData as any).certifications || [],
+        awards: (resumeData as any).awards || [],
+        expertise: (resumeData as any).expertise || [],
+        achievements: (resumeData as any).achievements || [],
+        sections: (resumeData as any).sections || {
+          summary: true,
+          expertise: true,
+          achievements: true,
+          experience: true,
+          education: true,
+          additional: true
+        }
+      };
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && onPhotoUpload) {
       onPhotoUpload(e.target.files[0]);
@@ -182,13 +233,13 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
   return (
     <div className="bg-white text-gray-800 p-8 max-w-[21cm] mx-auto">
       <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold uppercase mb-1">{resumeData.personalInfo.fullName}</h1>
-        <h2 className="text-xl uppercase mb-2">{resumeData.personalInfo.title}</h2>
+        <h1 className="text-3xl font-bold uppercase mb-1">{typedResumeData.personalInfo.fullName}</h1>
+        <h2 className="text-xl uppercase mb-2">{typedResumeData.personalInfo.title}</h2>
         <div className="text-sm">
-          {resumeData.personalInfo.location && <span>{resumeData.personalInfo.location}</span>}
-          {resumeData.personalInfo.phone && <span>{resumeData.personalInfo.location ? ' | ' : ''}{resumeData.personalInfo.phone}</span>}
-          {resumeData.personalInfo.email && <span>{resumeData.personalInfo.phone ? ' | ' : ''}{resumeData.personalInfo.email}</span>}
-          {resumeData.personalInfo.website && <span>{resumeData.personalInfo.email ? ' | ' : ''}{resumeData.personalInfo.website}</span>}
+          {typedResumeData.personalInfo.location && <span>{typedResumeData.personalInfo.location}</span>}
+          {typedResumeData.personalInfo.phone && <span>{typedResumeData.personalInfo.location ? ' | ' : ''}{typedResumeData.personalInfo.phone}</span>}
+          {typedResumeData.personalInfo.email && <span>{typedResumeData.personalInfo.phone ? ' | ' : ''}{typedResumeData.personalInfo.email}</span>}
+          {typedResumeData.personalInfo.website && <span>{typedResumeData.personalInfo.email ? ' | ' : ''}{typedResumeData.personalInfo.website}</span>}
         </div>
       </div>
       <hr className="border-t border-gray-300 mb-6" />

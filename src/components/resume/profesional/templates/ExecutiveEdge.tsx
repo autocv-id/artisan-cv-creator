@@ -1,48 +1,6 @@
 import React from 'react';
+import { ResumeData, ResumeDataType } from '@/types/resume';
 
-interface ResumeDataType {
-  personalInfo: {
-    fullName: string;
-    email: string;
-    phone: string;
-    location: string;
-    title: string;
-    summary: string;
-    website?: string;
-  };
-  experience: Array<{
-    id: number;
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-  }>;
-  education: Array<{
-    id: number;
-    school: string;
-    degree: string;
-    field: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-  }>;
-  skills: string[];
-  languages: string[];
-  certifications?: string[];
-  awards?: string[];
-  technicalSkills?: string[];
-  sections?: {
-    summary: boolean;
-    expertise: boolean;
-    achievements: boolean;
-    experience: boolean;
-    education: boolean;
-    additional: boolean;
-  };
-}
-
-// Tambahkan tipe untuk EditableField
 interface EditableFieldProps {
   value: string;
   onChange: (value: string) => void;
@@ -50,7 +8,6 @@ interface EditableFieldProps {
   isMultiline?: boolean;
 }
 
-// Komponen EditableField untuk inline editing
 const EditableField: React.FC<EditableFieldProps> = ({ 
   value, 
   onChange, 
@@ -60,7 +17,6 @@ const EditableField: React.FC<EditableFieldProps> = ({
   const [isEditing, setIsEditing] = React.useState(false);
   const elementRef = React.useRef<HTMLDivElement | HTMLSpanElement>(null);
   
-  // Menyimpan perubahan saat pengguna selesai mengedit
   const handleBlur = () => {
     if (elementRef.current) {
       onChange(elementRef.current.innerText);
@@ -68,20 +24,16 @@ const EditableField: React.FC<EditableFieldProps> = ({
     }
   };
   
-  // Menangani klik pada elemen
   const handleClick = () => {
     setIsEditing(true);
   };
   
-  // Menangani tombol keyboard
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Simpan perubahan saat menekan Enter (kecuali pada elemen multiline)
     if (e.key === 'Enter' && !isMultiline) {
       e.preventDefault();
       elementRef.current?.blur();
     }
     
-    // Batalkan editing saat menekan Escape
     if (e.key === 'Escape') {
       if (elementRef.current) {
         elementRef.current.innerText = value;
@@ -90,7 +42,6 @@ const EditableField: React.FC<EditableFieldProps> = ({
     }
   };
   
-  // Styling untuk elemen yang dapat diedit
   const editableStyle = `
     ${isEditing ? 'bg-blue-50 ring-2 ring-blue-300' : 'hover:bg-gray-50'}
     outline-none rounded px-1 transition-colors duration-150 ease-in-out cursor-pointer
@@ -123,11 +74,10 @@ const EditableField: React.FC<EditableFieldProps> = ({
 };
 
 interface ExecutiveEdgeProps {
-  resumeData: ResumeDataType;
+  resumeData: ResumeDataType | ResumeData;
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
-  // Tambahkan fungsi update
   onUpdatePersonalInfo?: (field: string, value: string) => void;
   onUpdateExperience?: (id: number, field: string, value: string) => void;
   onUpdateEducation?: (id: number, field: string, value: string) => void;
@@ -138,7 +88,6 @@ interface ExecutiveEdgeProps {
   onUpdateExpertise?: (index: number, value: string) => void;
   onUpdateAchievement?: (index: number, field: 'title' | 'description', value: string) => void;
   onPhotoUpload?: (file: File) => void;
-  // Tambahkan fungsi untuk menambah dan menghapus item
   onAddItem?: (section: string) => void;
   onRemoveItem?: (section: string, index: number) => void;
   onAddContactInfo?: (type: string) => void;
@@ -163,8 +112,56 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
   onRemoveItem,
   onAddContactInfo
 }) => {
-  // Initialize section status if not present
-  const sections = resumeData.sections || {
+  const typedResumeData = 'personalInfo' in resumeData 
+    ? resumeData as ResumeDataType 
+    : {
+        personalInfo: {
+          fullName: (resumeData as ResumeData).basics.name,
+          title: (resumeData as ResumeData).basics.label,
+          email: (resumeData as ResumeData).basics.email,
+          phone: (resumeData as ResumeData).basics.phone,
+          location: (resumeData as ResumeData).basics.location.address,
+          summary: (resumeData as ResumeData).basics.summary,
+          website: (resumeData as ResumeData).basics.url
+        },
+        experience: (resumeData as ResumeData).work.map((job, index) => ({
+          id: index + 1,
+          company: job.company,
+          position: job.position,
+          startDate: job.startDate,
+          endDate: job.endDate,
+          description: job.summary
+        })),
+        education: (resumeData as ResumeData).education.map((edu, index) => ({
+          id: index + 1,
+          school: edu.school || edu.institution,
+          degree: edu.degree || edu.studyType,
+          field: edu.field || edu.area,
+          startDate: edu.startDate,
+          endDate: edu.endDate,
+          description: edu.description || ''
+        })),
+        skills: Array.isArray((resumeData as ResumeData).skills) 
+          ? (resumeData as ResumeData).skills.map(s => typeof s === 'string' ? s : s.name) 
+          : [],
+        languages: Array.isArray((resumeData as ResumeData).languages) 
+          ? (resumeData as ResumeData).languages.map(l => typeof l === 'string' ? l : l.language) 
+          : [],
+        certifications: (resumeData as any).certifications || [],
+        awards: (resumeData as any).awards || [],
+        expertise: (resumeData as any).expertise || [],
+        achievements: (resumeData as any).achievements || [],
+        sections: (resumeData as any).sections || {
+          summary: true,
+          expertise: false,
+          achievements: false,
+          experience: true,
+          education: true,
+          additional: true
+        }
+      };
+  
+  const sections = typedResumeData.sections || {
     summary: true,
     expertise: false,
     achievements: false,
@@ -173,7 +170,6 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
     additional: true
   };
   
-  // Helper function for section toggle buttons
   const renderSectionToggle = (section: string, visible: boolean) => {
     if (!isEditable || !onSectionToggle) return null;
     
@@ -187,14 +183,12 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
     );
   };
 
-  // Helper function to split description into bullet points
   const renderBulletPoints = (description: string) => {
     return description.split('\n').map((point, idx) => 
       point.trim() && <li key={idx} className="mb-1 text-sm">{point.trim()}</li>
     );
   };
 
-  // Render editable content
   const renderEditableContent = (
     value: string, 
     onChange?: (value: string) => void, 
@@ -214,11 +208,9 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
     return <span className={className}>{value}</span>;
   };
 
-  // Render tombol tambah dan hapus untuk section
   const renderSectionControls = (section: string, index?: number) => {
     if (!isEditable) return null;
     
-    // Jika index tidak ada, ini adalah section header, tampilkan tombol tambah
     if (index === undefined) {
       return onAddItem ? (
         <div className="mt-2 text-left">
@@ -233,7 +225,6 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
       ) : null;
     }
     
-    // Jika index ada, ini adalah item dalam section, tampilkan tombol hapus
     return onRemoveItem ? (
       <button 
         onClick={() => onRemoveItem(section, index)}
@@ -245,21 +236,17 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
     ) : null;
   };
 
-  // Handle photo upload
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && onPhotoUpload) {
       onPhotoUpload(e.target.files[0]);
     }
   };
 
-  // State for contact info dropdown
   const [showContactMenu, setShowContactMenu] = React.useState(false);
 
   return (
     <div className="bg-white text-gray-800 p-8 max-w-[21cm] mx-auto">
-      {/* Header with photo */}
       <div className="flex mb-6">
-        {/* Photo section */}
         <div className="w-32 h-36 mr-6 relative group mt-2">
           {photoUrl ? (
             <img src={photoUrl} alt="Profile" className="w-full h-full object-cover border border-gray-300" />
@@ -285,11 +272,10 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
           )}
         </div>
         
-        {/* Contact information */}
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-blue-900">
             {renderEditableContent(
-              resumeData.personalInfo.fullName || 'YOUR NAME',
+              typedResumeData.personalInfo.fullName || 'YOUR NAME',
               onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('fullName', value) : undefined,
               false,
               "font-bold"
@@ -300,7 +286,7 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             <div className="font-bold">Address:</div>
             <div>
               {renderEditableContent(
-                resumeData.personalInfo.location || 'Your Address',
+                typedResumeData.personalInfo.location || 'Your Address',
                 onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('location', value) : undefined
               )}
             </div>
@@ -308,7 +294,7 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             <div className="font-bold">Phone:</div>
             <div>
               {renderEditableContent(
-                resumeData.personalInfo.phone || 'Your Phone',
+                typedResumeData.personalInfo.phone || 'Your Phone',
                 onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('phone', value) : undefined
               )}
             </div>
@@ -316,17 +302,17 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             <div className="font-bold">Email:</div>
             <div>
               {renderEditableContent(
-                resumeData.personalInfo.email || 'Your Email',
+                typedResumeData.personalInfo.email || 'Your Email',
                 onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('email', value) : undefined
               )}
             </div>
             
-            {resumeData.personalInfo.website && (
+            {typedResumeData.personalInfo.website && (
               <>
                 <div className="font-bold">Website:</div>
                 <div>
                   {renderEditableContent(
-                    resumeData.personalInfo.website,
+                    typedResumeData.personalInfo.website,
                     onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('website', value) : undefined
                   )}
                 </div>
@@ -334,7 +320,6 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             )}
           </div>
           
-          {/* Add Contact Info Button */}
           {isEditable && onAddContactInfo && (
             <div className="mt-2 relative">
               <button 
@@ -388,14 +373,13 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
         </div>
       </div>
 
-      {/* Summary Section */}
-      {sections.summary && resumeData.personalInfo.summary && (
+      {sections.summary && typedResumeData.personalInfo.summary && (
         <div className="mb-6 relative group">
           {renderSectionToggle('summary', sections.summary)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">SUMMARY</h2>
           <p className="text-sm">
             {renderEditableContent(
-              resumeData.personalInfo.summary,
+              typedResumeData.personalInfo.summary,
               onUpdatePersonalInfo ? (value) => onUpdatePersonalInfo('summary', value) : undefined,
               true
             )}
@@ -403,14 +387,13 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
         </div>
       )}
 
-      {/* Work Experience Section */}
-      {sections.experience && resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
+      {sections.experience && typedResumeData.experience.length > 0 && typedResumeData.experience.some(exp => exp.company) && (
         <div className="mb-6 relative group">
           {renderSectionToggle('experience', sections.experience)}
           <h2 className="text-xl font-bold  text-blue-900 border-b border-gray-300 pb-1 mb-2">
             WORK EXPERIENCE
           </h2>
-          {resumeData.experience
+          {typedResumeData.experience
             .filter(exp => exp.company)
             .map((exp, index) => (
               <div key={exp.id} className="mb-4">
@@ -451,14 +434,13 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
         </div>
       )}
 
-      {/* Education Section */}
-      {sections.education && resumeData.education.length > 0 && resumeData.education.some(edu => edu.school) && (
+      {sections.education && typedResumeData.education.length > 0 && typedResumeData.education.some(edu => edu.school) && (
         <div className="mb-6 relative group">
           {renderSectionToggle('education', sections.education)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">
             EDUCATION
           </h2>
-          {resumeData.education
+          {typedResumeData.education
             .filter(edu => edu.school)
             .map((edu, index) => (
               <div key={edu.id} className="mb-4">
@@ -510,17 +492,15 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
         </div>
       )}
 
-      {/* Additional Information Section */}
       {sections.additional && (
         <div className="mb-6 relative group">
           {renderSectionToggle('additional', sections.additional)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">ADDITIONAL INFORMATION</h2>
           
-          {/* Technical Skills Section */}
-          {resumeData.technicalSkills && resumeData.technicalSkills.length > 0 && (
+          {typedResumeData.technicalSkills && typedResumeData.technicalSkills.length > 0 && (
             <div className="mb-2">
               <p className="text-sm"><span className="font-bold">Technical Skills:</span> 
-                {resumeData.technicalSkills.map((skill, index) => (
+                {typedResumeData.technicalSkills.map((skill, index) => (
                   <span key={index}>
                     {index > 0 && ', '}
                     {renderEditableContent(
@@ -535,11 +515,10 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             </div>
           )}
           
-          {/* Languages Section */}
-          {resumeData.languages.some(lang => lang) && (
+          {typedResumeData.languages.some(lang => lang) && (
             <div className="mb-2">
               <p className="text-sm"><span className="font-bold">Languages:</span> 
-                {resumeData.languages.filter(l => l).map((lang, index) => (
+                {typedResumeData.languages.filter(l => l).map((lang, index) => (
                   <span key={index}>
                     {index > 0 && ', '}
                     {renderEditableContent(
@@ -554,11 +533,10 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             </div>
           )}
 
-          {/* Certifications Section */}
-          {resumeData.certifications && resumeData.certifications.some(cert => cert) && (
+          {typedResumeData.certifications && typedResumeData.certifications.some(cert => cert) && (
             <div className="mb-2">
               <p className="text-sm"><span className="font-bold">Certifications:</span> 
-                {resumeData.certifications.filter(c => c).map((cert, index) => (
+                {typedResumeData.certifications.filter(c => c).map((cert, index) => (
                   <span key={index}>
                     {index > 0 && ', '}
                     {renderEditableContent(
@@ -573,11 +551,10 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
             </div>
           )}
 
-          {/* Awards Section */}
-          {resumeData.awards && resumeData.awards.some(award => award) && (
+          {typedResumeData.awards && typedResumeData.awards.some(award => award) && (
             <div className="mb-2">
               <p className="text-sm"><span className="font-bold">Awards/Activities:</span> 
-                {resumeData.awards.filter(a => a).map((award, index) => (
+                {typedResumeData.awards.filter(a => a).map((award, index) => (
                   <span key={index}>
                     {index > 0 && ', '}
                     {renderEditableContent(

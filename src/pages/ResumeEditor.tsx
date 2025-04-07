@@ -590,15 +590,15 @@ const ResumeEditor = () => {
       reactRoot.render(
         <React.StrictMode>
           {currentTemplate === 'prime-suite' ? (
-            <PrimeSuiteTemplate resumeData={convertToResumeData(filteredResumeData) as ResumeData} />
+            <PrimeSuiteTemplate resumeData={filteredResumeData} />
           ) : currentTemplate === 'executive-edge' ? (
-            <ExecutiveEdge resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
+            <ExecutiveEdge resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
           ) : currentTemplate === 'corporate-blue' ? (
-            <CorporateBlue resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
+            <CorporateBlue resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
           ) : currentTemplate === 'formal-focus' ? (
-            <FormalFocus resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
+            <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
           ) : (
-            <FormalFocus resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
+            <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
           )}
         </React.StrictMode>
       );
