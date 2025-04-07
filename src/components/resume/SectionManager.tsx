@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface SectionManagerProps {
   sections: Record<string, boolean>;
@@ -21,21 +23,22 @@ const SectionManager = ({
   };
 
   return (
-    <Card className="p-4 mb-4 bg-white shadow-sm">
-      <h3 className="font-medium text-sm mb-3 text-gray-700">Kelola Bagian Resume</h3>
-      <div className="grid grid-cols-2 gap-3">
+    <Card className="p-4 bg-white shadow-sm border border-gray-200 rounded-lg">
+      <h3 className="font-medium text-sm mb-4 text-gray-700 border-b pb-2">Kelola Bagian Resume</h3>
+      <div className="space-y-3">
         {Object.entries(sections).map(([section, isVisible]) => (
-          <div key={section} className="flex items-center space-x-2 bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
+          <div key={section} className="flex items-center justify-between py-1">
+            <Label 
+              htmlFor={`section-${section}`} 
+              className="text-sm text-gray-700 cursor-pointer"
+            >
+              {sectionNames[section] || section}
+            </Label>
+            <Switch
               id={`section-${section}`}
               checked={isVisible}
-              onChange={() => onToggle(section, !isVisible)}
-              className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+              onCheckedChange={(checked) => onToggle(section, checked)}
             />
-            <label htmlFor={`section-${section}`} className="text-sm text-gray-700 cursor-pointer">
-              {sectionNames[section] || section}
-            </label>
           </div>
         ))}
       </div>
