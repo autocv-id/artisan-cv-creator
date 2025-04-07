@@ -637,7 +637,7 @@ const ResumeEditor = () => {
       
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
       
-      if (pdfContentHeight > pdfHeight) {
+      if (imgHeight > pdfHeight) {
         const multiPageCanvas = document.createElement('canvas');
         const ctx = multiPageCanvas.getContext('2d');
         
@@ -918,7 +918,7 @@ const ResumeEditor = () => {
   };
 
   return (
-    <Layout withFooter={false}>
+    <Layout>
       <div className="container mx-auto px-4 py-8">
         {/* UI components */}
       </div>
