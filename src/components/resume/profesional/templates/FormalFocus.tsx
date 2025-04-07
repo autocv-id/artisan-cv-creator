@@ -1,4 +1,95 @@
 import React from 'react';
+import { ResumeData } from '@/types/resume';
+
+// Tambahkan tipe untuk EditableField
+interface EditableFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  isMultiline?: boolean;
+  className?: string;
+}
+
+// Komponen EditableField untuk inline editing
+const EditableField: React.FC<EditableFieldProps> = ({
+  value,
+  onChange,
+  isMultiline = false,
+  className = ""
+}) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState(value);
+  const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const handleClick = () => {
+    setIsEditing(true);
+    setEditValue(value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onChange(editValue);
+      setIsEditing(false);
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditValue(value);
+    }
+  };
+
+  const handleBlur = () => {
+    onChange(editValue);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    if (isMultiline) {
+      return (
+        <textarea
+          ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className={`w-full p-1 border border-gray-300 rounded focus:outline-none focus:border-blue-500 ${className}`}
+          rows={3}
+        />
+      );
+    }
+    return (
+      <input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type="text"
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className={`w-full p-1 border border-gray-300 rounded focus:outline-none focus:border-blue-500 ${className}`}
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={handleClick}
+      className={`cursor-text hover:bg-gray-100 rounded px-1 -mx-1 ${className}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          handleClick();
+        }
+      }}
+    >
+      {value || 'Click to edit'}
+    </span>
+  );
+};
 
 interface ResumeDataType {
   personalInfo: {
@@ -51,14 +142,74 @@ interface FormalFocusProps {
   photoUrl?: string;
   isEditable?: boolean;
   onSectionToggle?: (section: string, visible: boolean) => void;
+  onUpdatePersonalInfo?: (field: string, value: string) => void;
+  onUpdateExperience?: (index: number, field: string, value: string) => void;
+  onUpdateEducation?: (index: number, field: string, value: string) => void;
+  onUpdateSkill?: (index: number, value: string) => void;
+  onUpdateLanguage?: (index: number, value: string) => void;
+  onUpdateCertification?: (index: number, value: string) => void;
+  onUpdateAward?: (index: number, value: string) => void;
+  onUpdateExpertise?: (index: number, value: string) => void;
+  onUpdateAchievement?: (index: number, field: 'title' | 'description', value: string) => void;
+  onPhotoUpload?: (file: File) => void;
+  onAddItem?: (section: string) => void;
+  onRemoveItem?: (section: string, index: number) => void;
 }
 
 const FormalFocus: React.FC<FormalFocusProps> = ({ 
   resumeData, 
   photoUrl,
   isEditable = false,
-  onSectionToggle 
+  onSectionToggle,
+  onUpdatePersonalInfo,
+  onUpdateExperience,
+  onUpdateEducation,
+  onUpdateSkill,
+  onUpdateLanguage,
+  onUpdateCertification,
+  onUpdateAward,
+  onUpdateExpertise,
+  onUpdateAchievement,
+  onPhotoUpload,
+  onAddItem,
+  onRemoveItem
 }) => {
+  // Handle photo upload
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && onPhotoUpload) {
+      onPhotoUpload(e.target.files[0]);
+    }
+  };
+
+  // Render tombol tambah dan hapus untuk section
+  const renderSectionControls = (section: string, index?: number) => {
+    if (!isEditable) return null;
+    
+    // Jika index tidak ada, ini adalah section header, tampilkan tombol tambah
+    if (index === undefined) {
+      return onAddItem ? (
+        <button 
+          onClick={() => onAddItem(section)}
+          className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded hover:bg-gray-200 transition-colors mt-2"
+          aria-label={`Add ${section}`}
+        >
+          + Add
+        </button>
+      ) : null;
+    }
+    
+    // Jika index ada, ini adalah item dalam section, tampilkan tombol hapus
+    return onRemoveItem ? (
+      <button 
+        onClick={() => onRemoveItem(section, index)}
+        className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
+        aria-label={`Remove ${section}`}
+      >
+        - Remove
+      </button>
+    ) : null;
+  };
+
   return (
     <div className="bg-white text-gray-800 p-8 max-w-[21cm] mx-auto">
       <div className="text-center mb-6">
@@ -93,39 +244,110 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
         </div>
       )}
       
-      {/* Experience Section */}
-      {resumeData.experience && resumeData.experience.length > 0 && 
-       (!resumeData.sections || resumeData.sections.experience !== false) && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold uppercase border-b border-gray-300 pb-1 mb-3">EXPERIENCE</h2>
-          {resumeData.experience.map((exp) => (
+      {/* Work Experience Section */}
+      {resumeData.experience && resumeData.experience.length > 0 && resumeData.experience.some(exp => exp.company) && (
+        <div className="mb-6 relative group">
+          {renderSectionControls('experience')}
+          <h2 className="text-xl font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2">
+            WORK EXPERIENCE
+          </h2>
+          {resumeData.experience
+            .filter(exp => exp.company)
+            .map((exp, index) => (
             <div key={exp.id} className="mb-4">
-              <div className="flex justify-between">
-                <h3 className="font-bold text-sm">{exp.position}</h3>
-                <span className="text-sm">{exp.startDate} - {exp.endDate}</span>
-              </div>
-              <p className="text-sm italic">{exp.company}</p>
-              <p className="text-sm mt-1 whitespace-pre-line">{exp.description}</p>
+                <div className="flex justify-between items-start">
+                  <h3 className="font-bold text-base">
+                    {renderEditableContent(
+                      exp.position || 'Position',
+                      onUpdateExperience ? (value) => onUpdateExperience(exp.id, 'position', value) : undefined
+                    )}, 
+                    {renderEditableContent(
+                      exp.company || 'Company',
+                      onUpdateExperience ? (value) => onUpdateExperience(exp.id, 'company', value) : undefined
+                    )}
+                  </h3>
+                  <span className="text-sm">
+                    {renderEditableContent(
+                      exp.startDate || 'Start Date',
+                      onUpdateExperience ? (value) => onUpdateExperience(exp.id, 'startDate', value) : undefined
+                    )} - 
+                    {renderEditableContent(
+                      exp.endDate || 'Present',
+                      onUpdateExperience ? (value) => onUpdateExperience(exp.id, 'endDate', value) : undefined
+                    )}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  {renderEditableContent(
+                    exp.description,
+                    onUpdateExperience ? (value) => onUpdateExperience(exp.id, 'description', value) : undefined,
+                    true,
+                    "text-sm"
+                  )}
+                </div>
+                {renderSectionControls('experience', index)}
             </div>
           ))}
+          {renderSectionControls('experience')}
         </div>
       )}
       
       {/* Education Section */}
-      {resumeData.education && resumeData.education.length > 0 && 
-       (!resumeData.sections || resumeData.sections.education !== false) && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold uppercase border-b border-gray-300 pb-1 mb-3">EDUCATION</h2>
-          {resumeData.education.map((edu) => (
+      {resumeData.education && resumeData.education.length > 0 && resumeData.education.some(edu => edu.school) && (
+        <div className="mb-6 relative group">
+          {renderSectionControls('education')}
+          <h2 className="text-xl font-bold text-gray-900 border-b border-gray-300 pb-1 mb-2">
+            EDUCATION
+          </h2>
+          {resumeData.education
+            .filter(edu => edu.school)
+            .map((edu, index) => (
             <div key={edu.id} className="mb-4">
-              <div className="flex justify-between">
-                <h3 className="font-bold text-sm">{edu.degree} in {edu.field}</h3>
-                <span className="text-sm">{edu.startDate} - {edu.endDate}</span>
-              </div>
-              <p className="text-sm italic">{edu.school}</p>
-              <p className="text-sm mt-1 whitespace-pre-line">{edu.description}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-base">
+                      {renderEditableContent(
+                        edu.degree || 'Degree',
+                        onUpdateEducation ? (value) => onUpdateEducation(edu.id, 'degree', value) : undefined
+                      )} 
+                      {edu.field && 'in '}
+                      {edu.field && renderEditableContent(
+                        edu.field,
+                        onUpdateEducation ? (value) => onUpdateEducation(edu.id, 'field', value) : undefined
+                      )}
+                    </h3>
+                    <p className="text-sm">
+                      {renderEditableContent(
+                        edu.school || 'School/University',
+                        onUpdateEducation ? (value) => onUpdateEducation(edu.id, 'school', value) : undefined
+                      )}
+                    </p>
+                  </div>
+                  <span className="text-sm">
+                    {renderEditableContent(
+                      edu.startDate || 'Start Date',
+                      onUpdateEducation ? (value) => onUpdateEducation(edu.id, 'startDate', value) : undefined
+                    )} - 
+                    {renderEditableContent(
+                      edu.endDate || 'End Date',
+                      onUpdateEducation ? (value) => onUpdateEducation(edu.id, 'endDate', value) : undefined
+                    )}
+                  </span>
+                </div>
+                {edu.description && (
+                  <div className="mt-2">
+                    {renderEditableContent(
+                      edu.description,
+                      onUpdateEducation ? (value) => onUpdateEducation(edu.id, 'description', value) : undefined,
+                      true,
+                      "text-sm"
+                    )}
+                  </div>
+                )}
+                {renderSectionControls('education', index)}
             </div>
           ))}
+          {renderSectionControls('education')}
         </div>
       )}
       
@@ -136,11 +358,20 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
           
           {/* Skills */}
           {resumeData.skills && resumeData.skills.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 relative group">
+              {renderSectionControls('skills')}
               <h3 className="font-bold text-sm mb-1">Skills</h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 {resumeData.skills.map((skill, index) => (
-                  <span key={index} className="bg-gray-100 px-2 py-1 rounded text-xs">{skill}</span>
+                  <div key={index} className="flex items-center">
+                    <span className="text-sm">
+                      {renderEditableContent(
+                        skill,
+                        onUpdateSkill ? (value) => onUpdateSkill(index, value) : undefined
+                      )}
+                    </span>
+                    {renderSectionControls('skills', index)}
+                  </div>
                 ))}
               </div>
             </div>
@@ -148,9 +379,22 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
           
           {/* Languages */}
           {resumeData.languages && resumeData.languages.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 relative group">
+              {renderSectionControls('languages')}
               <h3 className="font-bold text-sm mb-1">Languages</h3>
-              <p className="text-sm">{resumeData.languages.join(', ')}</p>
+              <div className="grid grid-cols-2 gap-4">
+                {resumeData.languages.filter(l => l).map((lang, index) => (
+                  <div key={index} className="flex items-center">
+                    <span className="text-sm">
+                      {renderEditableContent(
+                        lang,
+                        onUpdateLanguage ? (value) => onUpdateLanguage(index, value) : undefined
+                      )}
+                    </span>
+                    {renderSectionControls('languages', index)}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           

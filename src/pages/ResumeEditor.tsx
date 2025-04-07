@@ -777,6 +777,114 @@ const ResumeEditor = () => {
     });
   };
 
+  // Fungsi untuk menambah item baru di setiap section
+  const addItem = (section: string) => {
+    setResumeData(prev => {
+      const newData = { ...prev };
+      
+      switch (section) {
+        case 'experience': {
+          const newExpId = prev.experience.length > 0 
+            ? Math.max(...prev.experience.map(exp => exp.id)) + 1 
+            : 1;
+          newData.experience = [
+            ...prev.experience, 
+            { 
+              id: newExpId, 
+              company: 'Nama Perusahaan', 
+              position: 'Jabatan', 
+              startDate: 'Tanggal Mulai', 
+              endDate: 'Tanggal Selesai', 
+              description: 'Deskripsi pekerjaan' 
+            }
+          ];
+          break;
+        }
+        case 'education': {
+          const newEduId = prev.education.length > 0 
+            ? Math.max(...prev.education.map(edu => edu.id)) + 1 
+            : 1;
+          newData.education = [
+            ...prev.education, 
+            { 
+              id: newEduId, 
+              school: 'Nama Sekolah/Universitas', 
+              degree: 'Gelar', 
+              field: 'Bidang Studi', 
+              startDate: 'Tanggal Mulai', 
+              endDate: 'Tanggal Selesai', 
+              description: 'Deskripsi pendidikan' 
+            }
+          ];
+          break;
+        }
+        case 'skills':
+          newData.skills = [...prev.skills, 'Keterampilan Baru'];
+          break;
+        case 'languages':
+          newData.languages = [...prev.languages, 'Bahasa Baru'];
+          break;
+        case 'certifications':
+          newData.certifications = [...(prev.certifications || []), 'Sertifikasi Baru'];
+          break;
+        case 'awards':
+          newData.awards = [...(prev.awards || []), 'Penghargaan Baru'];
+          break;
+        case 'expertise':
+          newData.expertise = [...(prev.expertise || []), 'Keahlian Baru'];
+          break;
+        case 'achievements':
+          newData.achievements = [
+            ...(prev.achievements || []), 
+            { title: 'Judul Pencapaian', description: 'Deskripsi pencapaian' }
+          ];
+          break;
+        default:
+          break;
+      }
+      
+      return newData;
+    });
+  };
+
+  // Fungsi untuk menghapus item dari setiap section
+  const removeItem = (section: string, index: number) => {
+    setResumeData(prev => {
+      const newData = { ...prev };
+      
+      switch (section) {
+        case 'experience':
+          newData.experience = prev.experience.filter((_, i) => i !== index);
+          break;
+        case 'education':
+          newData.education = prev.education.filter((_, i) => i !== index);
+          break;
+        case 'skills':
+          newData.skills = prev.skills.filter((_, i) => i !== index);
+          break;
+        case 'languages':
+          newData.languages = prev.languages.filter((_, i) => i !== index);
+          break;
+        case 'certifications':
+          newData.certifications = (prev.certifications || []).filter((_, i) => i !== index);
+          break;
+        case 'awards':
+          newData.awards = (prev.awards || []).filter((_, i) => i !== index);
+          break;
+        case 'expertise':
+          newData.expertise = (prev.expertise || []).filter((_, i) => i !== index);
+          break;
+        case 'achievements':
+          newData.achievements = (prev.achievements || []).filter((_, i) => i !== index);
+          break;
+        default:
+          break;
+      }
+      
+      return newData;
+    });
+  };
+
   // Tambahkan fungsi untuk toggle section visibility
   const toggleSectionVisibility = (section: string, visible: boolean) => {
     setResumeData(prev => ({
@@ -807,6 +915,17 @@ const ResumeEditor = () => {
                 resumeData={resumeData} 
                 isEditable={true}
                 onSectionToggle={toggleSectionVisibility}
+                onUpdatePersonalInfo={updatePersonalInfo}
+                onUpdateExperience={updateExperience}
+                onUpdateEducation={updateEducation}
+                onUpdateSkill={updateSkill}
+                onUpdateLanguage={updateLanguage}
+                onUpdateCertification={updateCertification}
+                onUpdateAward={updateAward}
+                onUpdateExpertise={updateExpertise}
+                onUpdateAchievement={updateAchievement}
+                onAddItem={addItem}
+                onRemoveItem={removeItem}
               />
             </div>
           </div>
@@ -820,6 +939,17 @@ const ResumeEditor = () => {
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
                 onSectionToggle={toggleSectionVisibility}
+                onUpdatePersonalInfo={updatePersonalInfo}
+                onUpdateExperience={updateExperience}
+                onUpdateEducation={updateEducation}
+                onUpdateSkill={updateSkill}
+                onUpdateLanguage={updateLanguage}
+                onUpdateCertification={updateCertification}
+                onUpdateAward={updateAward}
+                onUpdateExpertise={updateExpertise}
+                onUpdateAchievement={updateAchievement}
+                onAddItem={addItem}
+                onRemoveItem={removeItem}
               />
             </div>
             <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
@@ -838,6 +968,17 @@ const ResumeEditor = () => {
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
                 onSectionToggle={toggleSectionVisibility}
+                onUpdatePersonalInfo={updatePersonalInfo}
+                onUpdateExperience={updateExperience}
+                onUpdateEducation={updateEducation}
+                onUpdateSkill={updateSkill}
+                onUpdateLanguage={updateLanguage}
+                onUpdateCertification={updateCertification}
+                onUpdateAward={updateAward}
+                onUpdateExpertise={updateExpertise}
+                onUpdateAchievement={updateAchievement}
+                onAddItem={addItem}
+                onRemoveItem={removeItem}
               />
             </div>
             <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
@@ -856,6 +997,17 @@ const ResumeEditor = () => {
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
                 onSectionToggle={toggleSectionVisibility}
+                onUpdatePersonalInfo={updatePersonalInfo}
+                onUpdateExperience={updateExperience}
+                onUpdateEducation={updateEducation}
+                onUpdateSkill={updateSkill}
+                onUpdateLanguage={updateLanguage}
+                onUpdateCertification={updateCertification}
+                onUpdateAward={updateAward}
+                onUpdateExpertise={updateExpertise}
+                onUpdateAchievement={updateAchievement}
+                onAddItem={addItem}
+                onRemoveItem={removeItem}
               />
             </div>
             <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
@@ -874,6 +1026,17 @@ const ResumeEditor = () => {
                 photoUrl={photoUrl || undefined}
                 isEditable={true}
                 onSectionToggle={toggleSectionVisibility}
+                onUpdatePersonalInfo={updatePersonalInfo}
+                onUpdateExperience={updateExperience}
+                onUpdateEducation={updateEducation}
+                onUpdateSkill={updateSkill}
+                onUpdateLanguage={updateLanguage}
+                onUpdateCertification={updateCertification}
+                onUpdateAward={updateAward}
+                onUpdateExpertise={updateExpertise}
+                onUpdateAchievement={updateAchievement}
+                onAddItem={addItem}
+                onRemoveItem={removeItem}
               />
             </div>
             <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
