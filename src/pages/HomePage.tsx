@@ -41,14 +41,14 @@ const HomePage = () => {
               </div>
             </div>
             <div className="lg:w-1/2 relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <div className="bg-white rounded-lg shadow-lg p-4 rotate-2 transition-transform hover:rotate-0 hover-scale">
+              <div className="bg-white rounded-lg shadow-lg p-3 rotate-2 transition-transform hover:rotate-0 hover-scale max-w-md mx-auto">
                 <img 
-                  src="https://wdguqtkfrpxmjzygousk.supabase.co/storage/v1/object/public/assets//prime-suite.jpg"
+                  src="https://wdguqtkfrpxmjzygousk.supabase.co/storage/v1/object/public/assets//1.jpg"
                   alt="Resume preview"
-                  className="rounded-md"
+                  className="rounded-md w-full h-auto"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-resume-accent text-white py-2 px-4 rounded shadow-md rotate-3">
+              <div className="absolute -bottom-6 right-[450px] bg-resume-accent text-white py-2 px-4 rounded shadow-md rotate-3">
                 <span className="font-semibold">ATS-friendly</span>
               </div>
             </div>
@@ -60,7 +60,7 @@ const HomePage = () => {
       <section className="py-20">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-resume-primary mb-4">Why Choose ArtisanCV</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-resume-primary mb-4">Why Choose Resuma</h2>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
               Our resume builder combines professional design with powerful features to help you stand out.
             </p>
@@ -99,11 +99,13 @@ const HomePage = () => {
             {[1, 2, 3].map((item) => (
               <div key={item} className="group">
                 <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all hover-scale">
-                  <img 
-                    src={`https://placehold.co/400x500/${item === 1 ? '1A365D' : item === 2 ? '38B2AC' : '4299E1'}/FFFFFF/png?text=Template+${item}`}
-                    alt={`Resume template ${item}`}
-                    className="w-full object-cover h-80"
-                  />
+                  <div className="h-96 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={`https://wdguqtkfrpxmjzygousk.supabase.co/storage/v1/object/public/assets/${item}.jpg`}
+                      alt={`Resume template ${item}`}
+                      className="w-full object-contain max-h-full"
+                    />
+                  </div>
                   <div className="p-4">
                     <h3 className="text-xl font-semibold text-gray-800">{
                       item === 1 ? "Professional" : item === 2 ? "Modern" : "Creative"
@@ -131,7 +133,7 @@ const HomePage = () => {
       <section className="py-20">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-resume-primary mb-4">Our Users Love ArtisanCV</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-resume-primary mb-4">Our Users Love Resuma</h2>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
               See what people are saying about their experience
             </p>
@@ -142,7 +144,7 @@ const HomePage = () => {
               {
                 name: "Sarah Johnson",
                 role: "Marketing Specialist",
-                quote: "ArtisanCV helped me land my dream job! The templates are beautiful and the interface is so easy to use."
+                quote: "Resuma helped me land my dream job! The templates are beautiful and the interface is so easy to use."
               },
               {
                 name: "Michael Chen",
@@ -152,7 +154,7 @@ const HomePage = () => {
               {
                 name: "Emma Roberts",
                 role: "Graphic Designer",
-                quote: "As a designer, I appreciate good aesthetics, and ArtisanCV delivers. My resume looks amazing and I've received so many compliments."
+                quote: "As a designer, I appreciate good aesthetics, and Resuma delivers. My resume looks amazing and I've received so many compliments."
               }
             ].map((testimonial, index) => (
               <div 
@@ -180,7 +182,7 @@ const HomePage = () => {
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Build Your Professional Resume?</h2>
           <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8">
-            Join thousands of job seekers who have successfully landed jobs with resumes made on ArtisanCV
+            Join thousands of job seekers who have successfully landed jobs with resumes made on Resuma
           </p>
           <Link to="/editor/new">
             <Button className="bg-white text-resume-primary hover:bg-gray-100 text-lg px-8 py-6">

@@ -1,4 +1,3 @@
-
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -75,7 +74,7 @@ const FeaturesPage = () => {
         <div className="text-center mb-16">
           <h1 className="text-3xl md:text-5xl font-bold text-resume-primary mb-4">Features</h1>
           <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-            Discover all the powerful tools and features that make ArtisanCV the best resume builder
+            Discover all the powerful tools and features that make Resuma the best resume builder
           </p>
         </div>
 
@@ -130,7 +129,7 @@ const FeaturesPage = () => {
               <thead>
                 <tr className="bg-gray-50">
                   <th className="p-4 text-left">Features</th>
-                  <th className="p-4 text-center">ArtisanCV</th>
+                  <th className="p-4 text-center">Resuma</th>
                   <th className="p-4 text-center">Competitors</th>
                 </tr>
               </thead>

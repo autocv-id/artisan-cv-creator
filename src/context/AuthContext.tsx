@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       toast({
-        title: "Account created successfully",
-        description: "Welcome to ArtisanCV!",
+        title: "Account created!",
+        description: "Welcome to Resuma!",
       });
     } catch (error: any) {
       toast({
@@ -77,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       toast({
-        title: "Signed in successfully",
-        description: "Welcome back to ArtisanCV!",
+        title: "Logged in!",
+        description: "Welcome back to Resuma!",
       });
     } catch (error: any) {
       toast({

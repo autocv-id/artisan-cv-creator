@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -8,7 +7,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <Link to="/" className="flex items-center mb-4">
-              <span className="text-resume-primary font-playfair font-bold text-xl">ArtisanCV</span>
+              <span className="text-resume-primary font-playfair font-bold text-xl">Resuma</span>
             </Link>
             <p className="text-gray-600 text-sm">
               Professional resume builder to create standout resumes in minutes.
@@ -46,7 +45,7 @@ const Footer = () => {
         
         <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row md:items-center justify-between">
           <p className="text-gray-600 text-sm">
-            &copy; {new Date().getFullYear()} ArtisanCV. All rights reserved.
+            &copy; {new Date().getFullYear()} Resuma. All rights reserved.
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <a href="#" className="text-gray-500 hover:text-resume-primary">
