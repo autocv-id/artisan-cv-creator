@@ -403,17 +403,21 @@ const FormalFocus: React.FC<FormalFocusProps> = ({
               {renderSectionControls('languages')}
               <h3 className="font-bold text-sm mb-1">Languages</h3>
               <div className="grid grid-cols-2 gap-4">
-                {resumeData.languages.filter(l => l).map((lang, index) => (
-                  <div key={index} className="flex items-center">
-                    <span className="text-sm">
-                      {renderEditableContent(
-                        lang,
-                        onUpdateLanguage ? (value) => onUpdateLanguage(index, value) : undefined
-                      )}
-                    </span>
-                    {renderSectionControls('languages', index)}
-                  </div>
-                ))}
+                {resumeData.languages.filter(l => l).map((lang, index) => {
+                  // Handle both string and object types for languages
+                  const languageText = typeof lang === 'string' ? lang : lang.language;
+                  return (
+                    <div key={index} className="flex items-center">
+                      <span className="text-sm">
+                        {renderEditableContent(
+                          languageText,
+                          onUpdateLanguage ? (value) => onUpdateLanguage(index, value) : undefined
+                        )}
+                      </span>
+                      {renderSectionControls('languages', index)}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

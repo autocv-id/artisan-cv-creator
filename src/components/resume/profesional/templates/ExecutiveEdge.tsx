@@ -497,10 +497,10 @@ const ExecutiveEdge: React.FC<ExecutiveEdgeProps> = ({
           {renderSectionToggle('additional', sections.additional)}
           <h2 className="text-xl font-bold text-blue-900 border-b border-gray-300 pb-1 mb-2">ADDITIONAL INFORMATION</h2>
           
-          {typedResumeData.technicalSkills && typedResumeData.technicalSkills.length > 0 && (
+          {typedResumeData.skills && typedResumeData.skills.length > 0 && (
             <div className="mb-2">
-              <p className="text-sm"><span className="font-bold">Technical Skills:</span> 
-                {typedResumeData.technicalSkills.map((skill, index) => (
+              <p className="text-sm"><span className="font-bold">Skills:</span> 
+                {typedResumeData.skills.map((skill, index) => (
                   <span key={index}>
                     {index > 0 && ', '}
                     {renderEditableContent(
