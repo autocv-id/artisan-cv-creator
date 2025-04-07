@@ -57,12 +57,12 @@ export interface ResumeData {
   }[] | string[];
   // Additional fields used in templates
   sections?: {
-    summary?: boolean;
-    expertise?: boolean;
-    achievements?: boolean;
-    experience?: boolean;
-    education?: boolean;
-    additional?: boolean;
+    summary: boolean;
+    expertise: boolean;
+    achievements: boolean;
+    experience: boolean;
+    education: boolean;
+    additional: boolean;
   };
   experience?: Array<{
     id: number;
@@ -86,7 +86,7 @@ export interface ResumeData {
     location: string;
     title: string;
     summary: string;
-    website?: string;
+    website: string;
   };
 }
 
@@ -156,7 +156,7 @@ export type ResumeDataType = {
 };
 
 // Helper function to convert ResumeDataType to ResumeData for API compatibility
-export function convertToResumeData(data: ResumeDataType): ResumeData {
+export function convertToResumeData(data: ResumeDataType): any {
   return {
     basics: {
       name: data.personalInfo.fullName,
@@ -218,16 +218,23 @@ export function convertToResumeData(data: ResumeDataType): ResumeData {
 
 // Helper function to convert ResumeData to ResumeDataType for internal use
 export function convertToResumeDataType(data: ResumeData): ResumeDataType {
+  const personalInfo = data.personalInfo || {
+    fullName: data.basics.name,
+    title: data.basics.label,
+    email: data.basics.email,
+    phone: data.basics.phone,
+    location: data.basics.location.address,
+    summary: data.basics.summary,
+    website: data.basics.url || ''  // Set default empty string to make it non-optional
+  };
+  
+  // Make sure website is always defined
+  if (personalInfo.website === undefined) {
+    personalInfo.website = '';
+  }
+  
   return {
-    personalInfo: data.personalInfo || {
-      fullName: data.basics.name,
-      title: data.basics.label,
-      email: data.basics.email,
-      phone: data.basics.phone,
-      location: data.basics.location.address,
-      summary: data.basics.summary,
-      website: data.basics.url
-    },
+    personalInfo,
     experience: data.experience || data.work.map((job, index) => ({
       id: index + 1,
       company: job.company,
@@ -251,7 +258,14 @@ export function convertToResumeDataType(data: ResumeData): ResumeDataType {
     awards: data.awards || [],
     expertise: data.expertise || [],
     achievements: data.achievements || [],
-    sections: data.sections || {
+    sections: data.sections ? {
+      summary: data.sections.summary || false,
+      expertise: data.sections.expertise || false,
+      achievements: data.sections.achievements || false,
+      experience: data.sections.experience || false,
+      education: data.sections.education || false,
+      additional: data.sections.additional || false
+    } : {
       summary: true,
       expertise: true,
       achievements: true,

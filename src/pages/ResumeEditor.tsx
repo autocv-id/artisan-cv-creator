@@ -459,7 +459,7 @@ const ResumeEditor = () => {
           .from('resumes')
           .update({
             title: resumeTitle,
-            content: apiResumeData,
+            content: apiResumeData as any, // Use type assertion to avoid Json type error
             template_id: currentTemplate,
             updated_at: new Date().toISOString(),
           })
@@ -474,7 +474,7 @@ const ResumeEditor = () => {
           .insert({
             user_id: user.id,
             title: resumeTitle,
-            content: apiResumeData,
+            content: apiResumeData as any, // Use type assertion to avoid Json type error
             template_id: currentTemplate,
           });
 
@@ -629,15 +629,15 @@ const ResumeEditor = () => {
       reactRoot.render(
         <React.StrictMode>
           {currentTemplate === 'prime-suite' ? (
-            <PrimeSuiteTemplate resumeData={convertToResumeData(filteredResumeData)} />
+            <PrimeSuiteTemplate resumeData={convertToResumeData(filteredResumeData) as ResumeData} />
           ) : currentTemplate === 'executive-edge' ? (
-            <ExecutiveEdge resumeData={convertToResumeData(filteredResumeData)} photoUrl={photoUrl || undefined} />
+            <ExecutiveEdge resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
           ) : currentTemplate === 'corporate-blue' ? (
-            <CorporateBlue resumeData={convertToResumeData(filteredResumeData)} photoUrl={photoUrl || undefined} />
+            <CorporateBlue resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
           ) : currentTemplate === 'formal-focus' ? (
-            <FormalFocus resumeData={convertToResumeData(filteredResumeData)} photoUrl={photoUrl || undefined} />
+            <FormalFocus resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
           ) : (
-            <FormalFocus resumeData={convertToResumeData(filteredResumeData)} photoUrl={photoUrl || undefined} />
+            <FormalFocus resumeData={convertToResumeData(filteredResumeData) as ResumeData} photoUrl={photoUrl || undefined} />
           )}
         </React.StrictMode>
       );
@@ -990,8 +990,45 @@ const ResumeEditor = () => {
   };
 
   return (
-    <Layout>
-      {/* Render components here */}
+    <Layout withFooter={false}>
+      <div className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold">{resumeTitle}</h1>
+            <Input 
+              className="max-w-xs"
+              value={resumeTitle}
+              onChange={(e) => setResumeTitle(e.target.value)}
+              placeholder="Resume Title"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              Back to Dashboard
+            </Button>
+            <Button 
+              variant="outline" 
+              disabled={isDownloading}
+              onClick={handleDownload}
+              className="flex items-center gap-2"
+            >
+              {isDownloading ? 'Downloading...' : 'Download PDF'} <Download className="h-4 w-4" />
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2"
+            >
+              {isSaving ? 'Saving...' : 'Save Resume'} <Save className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </Layout>
   );
 };
