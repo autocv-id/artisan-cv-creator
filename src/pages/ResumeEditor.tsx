@@ -5,11 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Download, 
   Save, 
   Upload,
-  Camera
+  Camera,
+  Eye,
+  Settings,
+  Printer,
+  Edit,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -244,11 +253,11 @@ const SectionManager = ({
   };
 
   return (
-    <Card className="p-4 mb-4">
-      <h3 className="font-medium text-sm mb-2">Kelola Bagian Resume</h3>
-      <div className="grid grid-cols-2 gap-2">
+    <Card className="p-4 mb-4 bg-white shadow-sm">
+      <h3 className="font-medium text-sm mb-3 text-gray-700">Kelola Bagian Resume</h3>
+      <div className="grid grid-cols-2 gap-3">
         {Object.entries(sections).map(([section, isVisible]) => (
-          <div key={section} className="flex items-center space-x-2">
+          <div key={section} className="flex items-center space-x-2 bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors">
             <input
               type="checkbox"
               id={`section-${section}`}
@@ -256,7 +265,7 @@ const SectionManager = ({
               onChange={() => onToggle(section, !isVisible)}
               className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
             />
-            <label htmlFor={`section-${section}`} className="text-sm">
+            <label htmlFor={`section-${section}`} className="text-sm text-gray-700 cursor-pointer">
               {sectionNames[section] || section}
             </label>
           </div>
@@ -264,6 +273,49 @@ const SectionManager = ({
       </div>
     </Card>
   );
+};
+
+// Tambahkan komponen EditorToolbar baru
+const EditorToolbar = ({
+  onAddItem,
+  activeSection
+}: {
+  onAddItem: (section: string) => void;
+  activeSection: string;
+}) => {
+  const sectionButtonsMap: Record<string, { label: string, section: string }[]> = {
+    personal: [],
+    experience: [{ label: "Tambah Pengalaman", section: "experience" }],
+    education: [{ label: "Tambah Pendidikan", section: "education" }],
+    skills: [
+      { label: "Tambah Keterampilan", section: "skills" },
+      { label: "Tambah Bahasa", section: "languages" },
+      { label: "Tambah Keahlian", section: "expertise" }
+    ],
+    awards: [
+      { label: "Tambah Penghargaan", section: "awards" },
+      { label: "Tambah Sertifikasi", section: "certifications" },
+      { label: "Tambah Pencapaian", section: "achievements" }
+    ]
+  };
+
+  const buttons = sectionButtonsMap[activeSection] || [];
+
+  return buttons.length > 0 ? (
+    <div className="bg-white border border-gray-200 rounded-md shadow-sm p-2 mb-4 flex flex-wrap gap-2">
+      {buttons.map((btn, idx) => (
+        <Button 
+          key={idx} 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onAddItem(btn.section)}
+          className="flex items-center gap-1 text-xs"
+        >
+          <Plus className="h-3 w-3" /> {btn.label}
+        </Button>
+      ))}
+    </div>
+  ) : null;
 };
 
 const ResumeEditor = () => {
@@ -276,6 +328,9 @@ const ResumeEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('preview');
+  const [activeEditorSection, setActiveEditorSection] = useState('personal');
+  const [editorZoom, setEditorZoom] = useState(100);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -493,7 +548,7 @@ const ResumeEditor = () => {
     }
   };
 
-  // Handle download PDF
+  // Improved PDF download function for better quality and pagination
   const handleDownload = async () => {
     setIsDownloading(true);
     
@@ -507,9 +562,11 @@ const ResumeEditor = () => {
       
       // Render template dengan font yang jelas dan aman untuk PDF
       const cleanTemplate = document.createElement('div');
-      cleanTemplate.className = 'pdf-ready bg-white p-8';
+      cleanTemplate.className = 'pdf-ready bg-white';
       cleanTemplate.style.width = '21cm';
       cleanTemplate.style.minHeight = '29.7cm';
+      cleanTemplate.style.padding = '1.5cm';
+      cleanTemplate.style.boxSizing = 'border-box';
       
       // Clone resumeData dan filter hanya section yang visible
       const visibleSections = resumeData.sections || {
@@ -538,33 +595,41 @@ const ResumeEditor = () => {
           font-feature-settings: normal;
           text-rendering: optimizeLegibility;
           -webkit-font-smoothing: antialiased;
+          overflow: hidden;
+          break-inside: avoid;
         }
         .pdf-ready * {
           letter-spacing: normal;
           word-spacing: normal;
           text-rendering: optimizeLegibility;
+          page-break-inside: avoid;
         }
         .pdf-ready h1 {
           font-size: 24px;
           margin-bottom: 8px;
           font-weight: 700;
           letter-spacing: normal;
+          page-break-after: avoid;
         }
         .pdf-ready h2 {
           font-size: 18px;
           margin-bottom: 8px;
           font-weight: 600;
           letter-spacing: normal;
+          page-break-after: avoid;
         }
         .pdf-ready h3 {
           font-size: 16px;
           margin-bottom: 6px;
           font-weight: 600;
           letter-spacing: normal;
+          page-break-after: avoid;
         }
         .pdf-ready p {
           margin-bottom: 6px;
           font-size: 14px;
+          orphans: 3;
+          widows: 3;
         }
         .pdf-ready ul {
           margin-top: 6px;
@@ -586,6 +651,15 @@ const ResumeEditor = () => {
         .pdf-ready .text-sm {
           font-size: 14px;
           letter-spacing: normal;
+        }
+        .pdf-ready section {
+          page-break-inside: avoid;
+        }
+        .pdf-ready hr {
+          page-break-after: always;
+        }
+        .pdf-ready .page-break {
+          page-break-before: always;
         }
       `;
       document.head.appendChild(styleElement);
@@ -615,53 +689,118 @@ const ResumeEditor = () => {
       );
       
       // Tunggu lebih lama agar rendering selesai dan font dimuat
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Gunakan pengaturan html2canvas yang lebih baik untuk font
+      // Gunakan jsPDF dengan pengaturan yang lebih baik
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+        hotfixes: ["px_scaling"]
+      });
+      
+      // Konfigurasi untuk html2canvas
+      const scale = 2; // Higher scale for better quality
       const pdfOptions = {
-        scale: 2, // Higher scale for better quality
+        scale: scale,
         useCORS: true,
         allowTaint: true,
         logging: false,
-        letterRendering: true, // Penting untuk rendering teks yang benar
+        letterRendering: true,
         backgroundColor: '#ffffff',
-        fontFaces: [
-          {
-            family: 'Inter',
-            weight: '400'
-          },
-          {
-            family: 'Inter',
-            weight: '500'
-          },
-          {
-            family: 'Inter',
-            weight: '600'
-          },
-          {
-            family: 'Inter',
-            weight: '700'
-          }
-        ]
+        imageTimeout: 15000,
+        width: cleanTemplate.offsetWidth * scale,
+        height: cleanTemplate.offsetHeight * scale
       };
       
+      // Mendapatkan canvas dari template
       const canvas = await html2canvas(cleanTemplate, pdfOptions);
       
-      // Buat PDF dengan kualitas lebih tinggi
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      
-      // A4 size: 210mm x 297mm
-      const pdf = new jsPDF({
-        format: 'a4',
-        unit: 'mm',
-        orientation: 'portrait',
-        compress: false // Hindari kompresi yang bisa merusak kualitas
-      });
-      
+      // Ukuran A4 dalam milimeter
       const pdfWidth = 210;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = 297;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      // Mendapatkan dimensi dari canvas
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Menghitung rasio untuk mempertahankan aspek rasio
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      // Menghitung dimensi akhir
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      // Mengkonversi canvas ke gambar
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      
+      // Check jika konten lebih tinggi dari halaman A4 tunggal
+      const pdfContentHeight = (imgHeight * pdfWidth) / imgWidth;
+      
+      if (pdfContentHeight > pdfHeight) {
+        // Konten terlalu tinggi untuk satu halaman, buat multi-halaman PDF
+        
+        // Buat canvas baru yang lebih besar untuk menangani konten lebih banyak
+        const multiPageCanvas = document.createElement('canvas');
+        const ctx = multiPageCanvas.getContext('2d');
+        
+        if (ctx) {
+          // Tentukan tinggi per halaman (dalam piksel canvas)
+          const pageHeight = (pdfHeight * imgWidth) / pdfWidth;
+          const totalPages = Math.ceil(imgHeight / pageHeight);
+          
+          // Untuk setiap halaman
+          for (let page = 0; page < totalPages; page++) {
+            if (page > 0) {
+              pdf.addPage();
+            }
+            
+            // Hitung bagian dari gambar untuk halaman ini
+            const sourceY = page * pageHeight;
+            let sourceHeight = pageHeight;
+            
+            // Cek jika ini halaman terakhir dan mungkin tidak penuh
+            if (sourceY + sourceHeight > imgHeight) {
+              sourceHeight = imgHeight - sourceY;
+            }
+            
+            // Buat canvas untuk halaman ini
+            multiPageCanvas.width = imgWidth;
+            multiPageCanvas.height = sourceHeight;
+            
+            // Gambar bagian yang sesuai dari canvas asli
+            ctx.drawImage(
+              canvas, 
+              0, sourceY, imgWidth, sourceHeight, 
+              0, 0, imgWidth, sourceHeight
+            );
+            
+            // Dapatkan data gambar dari canvas halaman ini
+            const pageData = multiPageCanvas.toDataURL('image/jpeg', 1.0);
+            
+            // Tambahkan ke PDF
+            pdf.addImage(
+              pageData, 
+              'JPEG', 
+              0, 0, 
+              pdfWidth, (sourceHeight * pdfWidth) / imgWidth, 
+              '', 
+              'FAST'
+            );
+          }
+        }
+      } else {
+        // Konten muat dalam satu halaman
+        pdf.addImage(
+          imgData, 
+          'JPEG', 
+          0, 0, 
+          finalWidth, finalHeight, 
+          '', 
+          'FAST'
+        );
+      }
       
       // Simpan PDF dengan nama yang sesuai
       pdf.save(`${resumeTitle.replace(/\s+/g, '_')}.pdf`);
@@ -672,7 +811,7 @@ const ResumeEditor = () => {
       
       toast({
         title: "PDF berhasil dibuat",
-        description: "Resume Anda telah berhasil didownload",
+        description: "Resume Anda telah berhasil didownload dengan kualitas yang lebih baik.",
       });
       
     } catch (error) {
@@ -824,343 +963,4 @@ const ResumeEditor = () => {
         case 'languages':
           newData.languages = [...prev.languages, 'Bahasa Baru'];
           break;
-        case 'certifications':
-          newData.certifications = [...(prev.certifications || []), 'Sertifikasi Baru'];
-          break;
-        case 'awards':
-          newData.awards = [...(prev.awards || []), 'Penghargaan Baru'];
-          break;
-        case 'expertise':
-          newData.expertise = [...(prev.expertise || []), 'Keahlian Baru'];
-          break;
-        case 'achievements':
-          newData.achievements = [
-            ...(prev.achievements || []), 
-            { title: 'Judul Pencapaian', description: 'Deskripsi pencapaian' }
-          ];
-          break;
-        default:
-          break;
-      }
-      
-      return newData;
-    });
-  };
-
-  // Fungsi untuk menghapus item dari setiap section
-  const removeItem = (section: string, index: number) => {
-    setResumeData(prev => {
-      const newData = { ...prev };
-      
-      switch (section) {
-        case 'experience':
-          newData.experience = prev.experience.filter((_, i) => i !== index);
-          break;
-        case 'education':
-          newData.education = prev.education.filter((_, i) => i !== index);
-          break;
-        case 'skills':
-          newData.skills = prev.skills.filter((_, i) => i !== index);
-          break;
-        case 'languages':
-          newData.languages = prev.languages.filter((_, i) => i !== index);
-          break;
-        case 'certifications':
-          newData.certifications = (prev.certifications || []).filter((_, i) => i !== index);
-          break;
-        case 'awards':
-          newData.awards = (prev.awards || []).filter((_, i) => i !== index);
-          break;
-        case 'expertise':
-          newData.expertise = (prev.expertise || []).filter((_, i) => i !== index);
-          break;
-        case 'achievements':
-          newData.achievements = (prev.achievements || []).filter((_, i) => i !== index);
-          break;
-        default:
-          break;
-      }
-      
-      return newData;
-    });
-  };
-
-  // Tambahkan fungsi untuk toggle section visibility
-  const toggleSectionVisibility = (section: string, visible: boolean) => {
-    setResumeData(prev => ({
-      ...prev,
-      sections: {
-        ...(prev.sections || {
-          summary: true,
-          expertise: true,
-          achievements: true,
-          experience: true,
-          education: true,
-          additional: true
-        }),
-        [section]: visible
-      }
-    }));
-  };
-
-  // Komponen template yang dapat diedit
-  const EditableResumeTemplate = () => {
-    // Render template berdasarkan jenis yang dipilih
-    switch (currentTemplate) {
-      case 'prime-suite':
-        return (
-          <div className="relative">
-            <div id="resume-preview" ref={resumeRef}>
-              <PrimeSuiteTemplate 
-                resumeData={resumeData} 
-                isEditable={true}
-                onSectionToggle={toggleSectionVisibility}
-                onUpdatePersonalInfo={updatePersonalInfo}
-                onUpdateExperience={updateExperience}
-                onUpdateEducation={updateEducation}
-                onUpdateSkill={updateSkill}
-                onUpdateLanguage={updateLanguage}
-                onUpdateCertification={updateCertification}
-                onUpdateAward={updateAward}
-                onUpdateExpertise={updateExpertise}
-                onUpdateAchievement={updateAchievement}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-              />
-            </div>
-          </div>
-        );
-      case 'executive-edge':
-        return (
-          <div className="relative">
-            <div id="resume-preview" ref={resumeRef}>
-              <ExecutiveEdge 
-                resumeData={resumeData} 
-                photoUrl={photoUrl || undefined}
-                isEditable={true}
-                onSectionToggle={toggleSectionVisibility}
-                onUpdatePersonalInfo={updatePersonalInfo}
-                onUpdateExperience={updateExperience}
-                onUpdateEducation={updateEducation}
-                onUpdateSkill={updateSkill}
-                onUpdateLanguage={updateLanguage}
-                onUpdateCertification={updateCertification}
-                onUpdateAward={updateAward}
-                onUpdateExpertise={updateExpertise}
-                onUpdateAchievement={updateAchievement}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-              />
-            </div>
-            <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
-              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-auto">
-                Klik untuk mengedit
-              </div>
-            </div>
-          </div>
-        );
-      case 'corporate-blue':
-        return (
-          <div className="relative">
-            <div id="resume-preview" ref={resumeRef}>
-              <CorporateBlue 
-                resumeData={resumeData} 
-                photoUrl={photoUrl || undefined}
-                isEditable={true}
-                onSectionToggle={toggleSectionVisibility}
-                onUpdatePersonalInfo={updatePersonalInfo}
-                onUpdateExperience={updateExperience}
-                onUpdateEducation={updateEducation}
-                onUpdateSkill={updateSkill}
-                onUpdateLanguage={updateLanguage}
-                onUpdateCertification={updateCertification}
-                onUpdateAward={updateAward}
-                onUpdateExpertise={updateExpertise}
-                onUpdateAchievement={updateAchievement}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-              />
-            </div>
-            <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
-              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-auto">
-                Klik untuk mengedit
-              </div>
-            </div>
-          </div>
-        );
-      case 'formal-focus':
-        return (
-          <div className="relative">
-            <div id="resume-preview" ref={resumeRef}>
-              <FormalFocus 
-                resumeData={resumeData} 
-                photoUrl={photoUrl || undefined}
-                isEditable={true}
-                onSectionToggle={toggleSectionVisibility}
-                onUpdatePersonalInfo={updatePersonalInfo}
-                onUpdateExperience={updateExperience}
-                onUpdateEducation={updateEducation}
-                onUpdateSkill={updateSkill}
-                onUpdateLanguage={updateLanguage}
-                onUpdateCertification={updateCertification}
-                onUpdateAward={updateAward}
-                onUpdateExpertise={updateExpertise}
-                onUpdateAchievement={updateAchievement}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-              />
-            </div>
-            <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
-              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-auto">
-                Klik untuk mengedit
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <div className="relative">
-            <div id="resume-preview" ref={resumeRef}>
-              <FormalFocus 
-                resumeData={resumeData} 
-                photoUrl={photoUrl || undefined}
-                isEditable={true}
-                onSectionToggle={toggleSectionVisibility}
-                onUpdatePersonalInfo={updatePersonalInfo}
-                onUpdateExperience={updateExperience}
-                onUpdateEducation={updateEducation}
-                onUpdateSkill={updateSkill}
-                onUpdateLanguage={updateLanguage}
-                onUpdateCertification={updateCertification}
-                onUpdateAward={updateAward}
-                onUpdateExpertise={updateExpertise}
-                onUpdateAchievement={updateAchievement}
-                onAddItem={addItem}
-                onRemoveItem={removeItem}
-              />
-            </div>
-            <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-0 hover:opacity-100 transition-opacity">
-              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-auto">
-                Klik untuk mengedit
-              </div>
-            </div>
-          </div>
-        );
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Layout withFooter={false}>
-        <div className="container mx-auto px-4 md:px-6 py-12">
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout withFooter={false}>
-      <div className="container mx-auto px-4 md:px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold text-resume-primary">Resume Editor</h1>
-            <div className="flex items-center space-x-2">
-              <Input
-                value={resumeTitle}
-                onChange={(e) => setResumeTitle(e.target.value)}
-                className="max-w-xs"
-                placeholder="Resume Title"
-              />
-              {templateData && (
-                <Badge variant="outline" className="ml-2 text-sm">
-                  Template: {templateData.name}
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {templateRequiresPhoto(currentTemplate) && (
-              <Button 
-                variant="outline" 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex gap-2 items-center"
-              >
-                <Camera className="h-4 w-4" />
-                Upload Photo
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  accept="image/*"
-                />
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              onClick={handleSave} 
-              className="flex gap-2 items-center"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <div className="animate-spin h-4 w-4 border-t-2 border-primary rounded-full" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Save
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleDownload} 
-              className="flex gap-2 items-center"
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <div className="animate-spin h-4 w-4 border-t-2 border-primary rounded-full" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              Download PDF
-            </Button>
-            <Link to="/dashboard">
-              <Button variant="secondary" className="flex gap-2 items-center">
-                Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <Card className="p-4">
-            <p className="text-sm text-gray-600">
-              <strong>Petunjuk:</strong> Klik langsung pada bagian resume yang ingin Anda edit. Semua perubahan akan langsung terlihat pada template.
-            </p>
-          </Card>
-        </div>
-
-        <SectionManager 
-          sections={resumeData.sections || {
-            summary: true,
-            expertise: true,
-            achievements: true,
-            experience: true,
-            education: true,
-            additional: true
-          }} 
-          onToggle={toggleSectionVisibility} 
-        />
-
-        <div className="flex justify-center">
-          <div className="w-full max-w-[21cm] shadow-lg">
-            <EditableResumeTemplate />
-          </div>
-        </div>
-      </div>
-    </Layout>
-  );
-};
-
-export default ResumeEditor;
+        case '
