@@ -963,4 +963,684 @@ const ResumeEditor = () => {
         case 'languages':
           newData.languages = [...prev.languages, 'Bahasa Baru'];
           break;
-        case '
+        case 'expertise':
+          newData.expertise = [...(prev.expertise || []), 'Area Keahlian Baru'];
+          break;
+        case 'certifications':
+          newData.certifications = [...(prev.certifications || []), 'Sertifikasi Baru'];
+          break;
+        case 'awards':
+          newData.awards = [...(prev.awards || []), 'Penghargaan Baru'];
+          break;
+        case 'achievements':
+          newData.achievements = [
+            ...(prev.achievements || []),
+            {
+              title: 'Judul Pencapaian',
+              description: 'Deskripsi pencapaian dan dampak yang dihasilkan.'
+            }
+          ];
+          break;
+        default:
+          break;
+      }
+      
+      return newData;
+    });
+  };
+
+  // Fungsi untuk menghapus item di setiap section
+  const removeItem = (section: string, index: number) => {
+    setResumeData(prev => {
+      const newData = { ...prev };
+      
+      switch (section) {
+        case 'experience':
+          newData.experience = prev.experience.filter((_, i) => i !== index);
+          break;
+        case 'education':
+          newData.education = prev.education.filter((_, i) => i !== index);
+          break;
+        case 'skills': {
+          const newSkills = [...prev.skills];
+          newSkills.splice(index, 1);
+          newData.skills = newSkills;
+          break;
+        }
+        case 'languages': {
+          const newLanguages = [...prev.languages];
+          newLanguages.splice(index, 1);
+          newData.languages = newLanguages;
+          break;
+        }
+        case 'expertise': {
+          const newExpertise = [...(prev.expertise || [])];
+          newExpertise.splice(index, 1);
+          newData.expertise = newExpertise;
+          break;
+        }
+        case 'certifications': {
+          const newCertifications = [...(prev.certifications || [])];
+          newCertifications.splice(index, 1);
+          newData.certifications = newCertifications;
+          break;
+        }
+        case 'awards': {
+          const newAwards = [...(prev.awards || [])];
+          newAwards.splice(index, 1);
+          newData.awards = newAwards;
+          break;
+        }
+        case 'achievements': {
+          const newAchievements = [...(prev.achievements || [])];
+          newAchievements.splice(index, 1);
+          newData.achievements = newAchievements;
+          break;
+        }
+        default:
+          break;
+      }
+      
+      return newData;
+    });
+  };
+
+  // Fungsi untuk mengatur visibilitas bagian resume
+  const toggleSection = (section: string, isVisible: boolean) => {
+    setResumeData(prev => ({
+      ...prev,
+      sections: {
+        ...(prev.sections || {
+          summary: true,
+          expertise: true,
+          achievements: true,
+          experience: true,
+          education: true,
+          additional: true
+        }),
+        [section]: isVisible
+      }
+    }));
+  };
+
+  // Render the resume editor UI
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+          {/* Editor Panel */}
+          <div className="w-full md:w-1/3 space-y-4">
+            <Card className="p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <Input
+                  value={resumeTitle}
+                  onChange={(e) => setResumeTitle(e.target.value)}
+                  className="text-lg font-semibold border-0 focus-visible:ring-0 p-0 h-auto"
+                  placeholder="Resume Title"
+                />
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                  >
+                    <Save className="h-4 w-4 mr-1" /> 
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                  >
+                    <Download className="h-4 w-4 mr-1" /> 
+                    {isDownloading ? 'Creating...' : 'Download PDF'}
+                  </Button>
+                </div>
+              </div>
+
+              <Tabs defaultValue="preview" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="preview" className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" /> Preview
+                  </TabsTrigger>
+                  <TabsTrigger value="edit" className="flex items-center gap-1">
+                    <Edit className="h-4 w-4" /> Edit
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="preview">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Zoom:</span>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setEditorZoom(Math.max(50, editorZoom - 10))}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium">{editorZoom}%</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setEditorZoom(Math.min(150, editorZoom + 10))}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {templateRequiresPhoto(currentTemplate) && (
+                      <div className="mb-4">
+                        <span className="text-sm font-medium block mb-2">Profile Photo</span>
+                        <div className="flex items-center gap-3">
+                          {photoUrl ? (
+                            <div className="relative group">
+                              <img 
+                                src={photoUrl} 
+                                alt="Profile"
+                                className="w-16 h-16 object-cover rounded-full border border-gray-200"
+                              />
+                              <button 
+                                onClick={() => setPhotoUrl(null)}
+                                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="h-5 w-5 text-white" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div 
+                              className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer border border-gray-200"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Camera className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Upload className="h-4 w-4 mr-1" /> Upload Photo
+                            </Button>
+                            <input 
+                              type="file" 
+                              ref={fileInputRef} 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={handlePhotoUpload}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Recommended: square image, max 5MB</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {resumeData.sections && (
+                      <SectionManager 
+                        sections={resumeData.sections} 
+                        onToggle={toggleSection}
+                      />
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="edit">
+                  <div className="space-y-4">
+                    <div className="flex space-x-1 border-b">
+                      <Button
+                        variant={activeEditorSection === 'personal' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                        onClick={() => setActiveEditorSection('personal')}
+                        data-state={activeEditorSection === 'personal' ? 'active' : 'inactive'}
+                      >
+                        Personal
+                      </Button>
+                      <Button
+                        variant={activeEditorSection === 'experience' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                        onClick={() => setActiveEditorSection('experience')}
+                        data-state={activeEditorSection === 'experience' ? 'active' : 'inactive'}
+                      >
+                        Experience
+                      </Button>
+                      <Button
+                        variant={activeEditorSection === 'education' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                        onClick={() => setActiveEditorSection('education')}
+                        data-state={activeEditorSection === 'education' ? 'active' : 'inactive'}
+                      >
+                        Education
+                      </Button>
+                      <Button
+                        variant={activeEditorSection === 'skills' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                        onClick={() => setActiveEditorSection('skills')}
+                        data-state={activeEditorSection === 'skills' ? 'active' : 'inactive'}
+                      >
+                        Skills
+                      </Button>
+                      <Button
+                        variant={activeEditorSection === 'awards' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                        onClick={() => setActiveEditorSection('awards')}
+                        data-state={activeEditorSection === 'awards' ? 'active' : 'inactive'}
+                      >
+                        Awards
+                      </Button>
+                    </div>
+
+                    <EditorToolbar onAddItem={addItem} activeSection={activeEditorSection} />
+
+                    {/* Personal Info Form */}
+                    {activeEditorSection === 'personal' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Full Name</label>
+                          <Input
+                            value={resumeData.personalInfo.fullName}
+                            onChange={(e) => updatePersonalInfo('fullName', e.target.value)}
+                            placeholder="Full Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Job Title</label>
+                          <Input
+                            value={resumeData.personalInfo.title}
+                            onChange={(e) => updatePersonalInfo('title', e.target.value)}
+                            placeholder="Job Title"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Email</label>
+                          <Input
+                            value={resumeData.personalInfo.email}
+                            onChange={(e) => updatePersonalInfo('email', e.target.value)}
+                            placeholder="Email"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Phone</label>
+                          <Input
+                            value={resumeData.personalInfo.phone}
+                            onChange={(e) => updatePersonalInfo('phone', e.target.value)}
+                            placeholder="Phone"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Location</label>
+                          <Input
+                            value={resumeData.personalInfo.location}
+                            onChange={(e) => updatePersonalInfo('location', e.target.value)}
+                            placeholder="Location"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Website</label>
+                          <Input
+                            value={resumeData.personalInfo.website}
+                            onChange={(e) => updatePersonalInfo('website', e.target.value)}
+                            placeholder="Website"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium block mb-1">Summary</label>
+                          <textarea
+                            value={resumeData.personalInfo.summary}
+                            onChange={(e) => updatePersonalInfo('summary', e.target.value)}
+                            placeholder="Professional summary"
+                            rows={4}
+                            className="w-full p-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Experience Form */}
+                    {activeEditorSection === 'experience' && (
+                      <div className="space-y-6">
+                        {resumeData.experience.map((exp, index) => (
+                          <Card key={exp.id} className="p-4 relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-2 top-2 h-7 w-7 p-0 text-gray-400 hover:text-red-500"
+                              onClick={() => removeItem('experience', index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <div className="grid gap-3">
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Company</label>
+                                <Input
+                                  value={exp.company}
+                                  onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                                  placeholder="Company Name"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Position</label>
+                                <Input
+                                  value={exp.position}
+                                  onChange={(e) => updateExperience(exp.id, 'position', e.target.value)}
+                                  placeholder="Job Title"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-sm font-medium block mb-1">Start Date</label>
+                                  <Input
+                                    value={exp.startDate}
+                                    onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                                    placeholder="mm/yyyy"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium block mb-1">End Date</label>
+                                  <Input
+                                    value={exp.endDate}
+                                    onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                                    placeholder="mm/yyyy or Present"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Description</label>
+                                <textarea
+                                  value={exp.description}
+                                  onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                                  placeholder="Job description and achievements"
+                                  rows={4}
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                />
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Education Form */}
+                    {activeEditorSection === 'education' && (
+                      <div className="space-y-6">
+                        {resumeData.education.map((edu, index) => (
+                          <Card key={edu.id} className="p-4 relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-2 top-2 h-7 w-7 p-0 text-gray-400 hover:text-red-500"
+                              onClick={() => removeItem('education', index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <div className="grid gap-3">
+                              <div>
+                                <label className="text-sm font-medium block mb-1">School/University</label>
+                                <Input
+                                  value={edu.school}
+                                  onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
+                                  placeholder="School Name"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Degree</label>
+                                <Input
+                                  value={edu.degree}
+                                  onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                                  placeholder="Degree"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Field of Study</label>
+                                <Input
+                                  value={edu.field}
+                                  onChange={(e) => updateEducation(edu.id, 'field', e.target.value)}
+                                  placeholder="Field of Study"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-sm font-medium block mb-1">Start Date</label>
+                                  <Input
+                                    value={edu.startDate}
+                                    onChange={(e) => updateEducation(edu.id, 'startDate', e.target.value)}
+                                    placeholder="mm/yyyy"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium block mb-1">End Date</label>
+                                  <Input
+                                    value={edu.endDate}
+                                    onChange={(e) => updateEducation(edu.id, 'endDate', e.target.value)}
+                                    placeholder="mm/yyyy or Present"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium block mb-1">Description</label>
+                                <textarea
+                                  value={edu.description}
+                                  onChange={(e) => updateEducation(edu.id, 'description', e.target.value)}
+                                  placeholder="Additional information"
+                                  rows={3}
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                />
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Skills Section */}
+                    {activeEditorSection === 'skills' && (
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Skills</h3>
+                          <div className="space-y-2">
+                            {resumeData.skills.map((skill, index) => (
+                              <div key={`skill-${index}`} className="flex items-center">
+                                <Input
+                                  value={skill}
+                                  onChange={(e) => updateSkill(index, e.target.value)}
+                                  className="flex-grow"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-9 w-9 p-0"
+                                  onClick={() => removeItem('skills', index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Languages</h3>
+                          <div className="space-y-2">
+                            {resumeData.languages.map((language, index) => (
+                              <div key={`language-${index}`} className="flex items-center">
+                                <Input
+                                  value={language}
+                                  onChange={(e) => updateLanguage(index, e.target.value)}
+                                  className="flex-grow"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-9 w-9 p-0"
+                                  onClick={() => removeItem('languages', index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Areas of Expertise</h3>
+                          <div className="space-y-2">
+                            {(resumeData.expertise || []).map((area, index) => (
+                              <div key={`expertise-${index}`} className="flex items-center">
+                                <Input
+                                  value={area}
+                                  onChange={(e) => updateExpertise(index, e.target.value)}
+                                  className="flex-grow"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-9 w-9 p-0"
+                                  onClick={() => removeItem('expertise', index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Awards & Certifications Section */}
+                    {activeEditorSection === 'awards' && (
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Awards</h3>
+                          <div className="space-y-2">
+                            {(resumeData.awards || []).map((award, index) => (
+                              <div key={`award-${index}`} className="flex items-center">
+                                <Input
+                                  value={award}
+                                  onChange={(e) => updateAward(index, e.target.value)}
+                                  className="flex-grow"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-9 w-9 p-0"
+                                  onClick={() => removeItem('awards', index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Certifications</h3>
+                          <div className="space-y-2">
+                            {(resumeData.certifications || []).map((cert, index) => (
+                              <div key={`certification-${index}`} className="flex items-center">
+                                <Input
+                                  value={cert}
+                                  onChange={(e) => updateCertification(index, e.target.value)}
+                                  className="flex-grow"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-9 w-9 p-0"
+                                  onClick={() => removeItem('certifications', index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium mb-2">Key Achievements</h3>
+                          {(resumeData.achievements || []).map((achievement, index) => (
+                            <Card key={`achievement-${index}`} className="p-3 mb-3 relative">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-1 top-1 h-7 w-7 p-0 text-gray-400 hover:text-red-500"
+                                onClick={() => removeItem('achievements', index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              <div className="space-y-2 pt-2">
+                                <div>
+                                  <label className="text-xs font-medium block mb-1">Title</label>
+                                  <Input
+                                    value={achievement.title}
+                                    onChange={(e) => updateAchievement(index, 'title', e.target.value)}
+                                    className="text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium block mb-1">Description</label>
+                                  <textarea
+                                    value={achievement.description}
+                                    onChange={(e) => updateAchievement(index, 'description', e.target.value)}
+                                    className="w-full p-2 border text-sm border-gray-300 rounded-md"
+                                    rows={2}
+                                  />
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </Card>
+          </div>
+
+          {/* Resume Preview */}
+          <div className="w-full md:w-2/3 bg-gray-50 rounded-lg p-4 overflow-auto">
+            <div 
+              className="bg-white shadow-md mx-auto transition-all duration-200 ease-in-out"
+              style={{
+                width: `${editorZoom}%`,
+                minHeight: '29.7cm',
+                maxWidth: '100%',
+                transform: `scale(${editorZoom / 100})`,
+                transformOrigin: 'top left',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              }}
+              ref={resumeRef}
+            >
+              {currentTemplate === 'prime-suite' ? (
+                <PrimeSuiteTemplate resumeData={resumeData} />
+              ) : currentTemplate === 'executive-edge' ? (
+                <ExecutiveEdge resumeData={resumeData} photoUrl={photoUrl || undefined} />
+              ) : currentTemplate === 'corporate-blue' ? (
+                <CorporateBlue resumeData={resumeData} photoUrl={photoUrl || undefined} />
+              ) : currentTemplate === 'formal-focus' ? (
+                <FormalFocus resumeData={resumeData} photoUrl={photoUrl || undefined} />
+              ) : (
+                <div className="p-8 text-center">
+                  <p>Template not found. Please select a different template.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default ResumeEditor;
