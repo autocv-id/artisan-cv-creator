@@ -156,7 +156,7 @@ export type ResumeDataType = {
 };
 
 // Helper function to convert ResumeDataType to ResumeData for API compatibility
-export function convertToResumeData(data: ResumeDataType): any {
+export function convertToResumeData(data: ResumeDataType): ResumeData {
   return {
     basics: {
       name: data.personalInfo.fullName,
@@ -218,6 +218,7 @@ export function convertToResumeData(data: ResumeDataType): any {
 
 // Helper function to convert ResumeData to ResumeDataType for internal use
 export function convertToResumeDataType(data: ResumeData): ResumeDataType {
+  // Create a default personalInfo object from basics if personalInfo is not provided
   const personalInfo = data.personalInfo || {
     fullName: data.basics.name,
     title: data.basics.label,
@@ -227,11 +228,6 @@ export function convertToResumeDataType(data: ResumeData): ResumeDataType {
     summary: data.basics.summary,
     website: data.basics.url || ''  // Set default empty string to make it non-optional
   };
-  
-  // Make sure website is always defined
-  if (personalInfo.website === undefined) {
-    personalInfo.website = '';
-  }
   
   return {
     personalInfo,
@@ -259,12 +255,12 @@ export function convertToResumeDataType(data: ResumeData): ResumeDataType {
     expertise: data.expertise || [],
     achievements: data.achievements || [],
     sections: data.sections ? {
-      summary: data.sections.summary || false,
-      expertise: data.sections.expertise || false,
-      achievements: data.sections.achievements || false,
-      experience: data.sections.experience || false,
-      education: data.sections.education || false,
-      additional: data.sections.additional || false
+      summary: data.sections.summary,
+      expertise: data.sections.expertise,
+      achievements: data.sections.achievements,
+      experience: data.sections.experience,
+      education: data.sections.education,
+      additional: data.sections.additional
     } : {
       summary: true,
       expertise: true,

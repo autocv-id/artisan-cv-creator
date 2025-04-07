@@ -459,7 +459,7 @@ const ResumeEditor = () => {
           .from('resumes')
           .update({
             title: resumeTitle,
-            content: apiResumeData as any, // Use type assertion to avoid Json type error
+            content: apiResumeData as any, // Type assertion to avoid Json type error
             template_id: currentTemplate,
             updated_at: new Date().toISOString(),
           })
@@ -474,7 +474,7 @@ const ResumeEditor = () => {
           .insert({
             user_id: user.id,
             title: resumeTitle,
-            content: apiResumeData as any, // Use type assertion to avoid Json type error
+            content: apiResumeData as any, // Type assertion to avoid Json type error
             template_id: currentTemplate,
           });
 
@@ -941,96 +941,3 @@ const ResumeEditor = () => {
       
       return newData;
     });
-  };
-
-  // Fungsi untuk menghapus item di setiap section
-  const removeItem = (section: string, index: number) => {
-    setResumeData(prev => {
-      const newData = { ...prev };
-      
-      switch (section) {
-        case 'experience':
-          newData.experience = prev.experience.filter((_, i) => i !== index);
-          break;
-        case 'education':
-          newData.education = prev.education.filter((_, i) => i !== index);
-          break;
-        case 'skills':
-          newData.skills = prev.skills.filter((_, i) => i !== index);
-          break;
-        case 'languages':
-          newData.languages = prev.languages.filter((_, i) => i !== index);
-          break;
-        case 'expertise':
-          if (prev.expertise) {
-            newData.expertise = prev.expertise.filter((_, i) => i !== index);
-          }
-          break;
-        case 'certifications':
-          if (prev.certifications) {
-            newData.certifications = prev.certifications.filter((_, i) => i !== index);
-          }
-          break;
-        case 'awards':
-          if (prev.awards) {
-            newData.awards = prev.awards.filter((_, i) => i !== index);
-          }
-          break;
-        case 'achievements':
-          if (prev.achievements) {
-            newData.achievements = prev.achievements.filter((_, i) => i !== index);
-          }
-          break;
-        default:
-          break;
-      }
-      
-      return newData;
-    });
-  };
-
-  return (
-    <Layout withFooter={false}>
-      <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold">{resumeTitle}</h1>
-            <Input 
-              className="max-w-xs"
-              value={resumeTitle}
-              onChange={(e) => setResumeTitle(e.target.value)}
-              placeholder="Resume Title"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2"
-            >
-              Back to Dashboard
-            </Button>
-            <Button 
-              variant="outline" 
-              disabled={isDownloading}
-              onClick={handleDownload}
-              className="flex items-center gap-2"
-            >
-              {isDownloading ? 'Downloading...' : 'Download PDF'} <Download className="h-4 w-4" />
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2"
-            >
-              {isSaving ? 'Saving...' : 'Save Resume'} <Save className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Layout>
-  );
-};
-
-export default ResumeEditor;
