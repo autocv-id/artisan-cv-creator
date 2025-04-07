@@ -1,9 +1,13 @@
 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { ResumeDataType } from '@/types/resume';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { ResumeDataType } from '@/types/resume';
+
+// We need to import React and ReactDOM for the render function
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+// Import templates
 import PrimeSuiteTemplate from '@/components/resume/profesional/templates/primesuite';
 import ExecutiveEdge from '@/components/resume/profesional/templates/ExecutiveEdge';
 import CorporateBlue from '@/components/resume/profesional/templates/CorporateBlue';
@@ -126,20 +130,25 @@ export const generateResumePDF = async (
   
   await document.fonts.ready;
   
+  // Create a function to render the template
+  const renderTemplate = () => {
+    if (currentTemplate === 'prime-suite') {
+      return <PrimeSuiteTemplate resumeData={filteredResumeData} />;
+    } else if (currentTemplate === 'executive-edge') {
+      return <ExecutiveEdge resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+    } else if (currentTemplate === 'corporate-blue') {
+      return <CorporateBlue resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+    } else if (currentTemplate === 'formal-focus') {
+      return <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+    } else {
+      return <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />;
+    }
+  };
+  
   const reactRoot = ReactDOM.createRoot(cleanTemplate);
   reactRoot.render(
     <React.StrictMode>
-      {currentTemplate === 'prime-suite' ? (
-        <PrimeSuiteTemplate resumeData={filteredResumeData} />
-      ) : currentTemplate === 'executive-edge' ? (
-        <ExecutiveEdge resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-      ) : currentTemplate === 'corporate-blue' ? (
-        <CorporateBlue resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-      ) : currentTemplate === 'formal-focus' ? (
-        <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-      ) : (
-        <FormalFocus resumeData={filteredResumeData} photoUrl={photoUrl || undefined} />
-      )}
+      {renderTemplate()}
     </React.StrictMode>
   );
   
