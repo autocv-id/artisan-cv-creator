@@ -946,4 +946,54 @@ const ResumeEditor = () => {
   // Fungsi untuk menghapus item di setiap section
   const removeItem = (section: string, index: number) => {
     setResumeData(prev => {
-      const
+      const newData = { ...prev };
+      
+      switch (section) {
+        case 'experience':
+          newData.experience = prev.experience.filter((_, i) => i !== index);
+          break;
+        case 'education':
+          newData.education = prev.education.filter((_, i) => i !== index);
+          break;
+        case 'skills':
+          newData.skills = prev.skills.filter((_, i) => i !== index);
+          break;
+        case 'languages':
+          newData.languages = prev.languages.filter((_, i) => i !== index);
+          break;
+        case 'expertise':
+          if (prev.expertise) {
+            newData.expertise = prev.expertise.filter((_, i) => i !== index);
+          }
+          break;
+        case 'certifications':
+          if (prev.certifications) {
+            newData.certifications = prev.certifications.filter((_, i) => i !== index);
+          }
+          break;
+        case 'awards':
+          if (prev.awards) {
+            newData.awards = prev.awards.filter((_, i) => i !== index);
+          }
+          break;
+        case 'achievements':
+          if (prev.achievements) {
+            newData.achievements = prev.achievements.filter((_, i) => i !== index);
+          }
+          break;
+        default:
+          break;
+      }
+      
+      return newData;
+    });
+  };
+
+  return (
+    <Layout>
+      {/* Render components here */}
+    </Layout>
+  );
+};
+
+export default ResumeEditor;
