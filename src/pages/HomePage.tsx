@@ -69,14 +69,29 @@ const HomePage = () => {
               </div>
             </div>
             <div className="lg:w-1/2 relative animate-fade-in mt-8 lg:mt-0" style={{ animationDelay: '0.2s' }}>
-              <div className="bg-white rounded-lg shadow-lg p-3 rotate-2 transition-transform hover:rotate-0 hover-scale max-w-md mx-auto">
+              {/* Video demo replacing the resume preview image */}
+              <div className="relative rounded-lg overflow-hidden shadow-xl bg-gray-900 aspect-video">
+                {/* Placeholder video thumbnail */}
                 <img 
-                  src="https://wdguqtkfrpxmjzygousk.supabase.co/storage/v1/object/public/assets//1.jpg"
-                  alt="Resume preview"
-                  className="rounded-md w-full h-auto"
+                  src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6" 
+                  alt="Resume builder demo" 
+                  className="w-full h-full object-cover opacity-80"
                 />
+                
+                {/* Play button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <button className="bg-white/90 hover:bg-white text-resume-primary rounded-full p-3 md:p-4 shadow-lg transform transition-transform hover:scale-110">
+                    <Play className="w-8 h-8 md:w-10 md:h-10 fill-current" />
+                  </button>
+                </div>
+                
+                {/* Video caption */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4">
+                  <h3 className="text-white text-sm md:text-lg font-medium">Watch How Our Resume Builder Works</h3>
+                  <p className="text-white/80 text-xs md:text-sm mt-1">Duration: 3:15</p>
+                </div>
               </div>
-              <div className="absolute -bottom-6 right-0 md:right-[450px] bg-resume-accent text-white py-2 px-4 rounded shadow-md rotate-3">
+              <div className="absolute -bottom-6 right-0 md:right-12 bg-resume-accent text-white py-2 px-4 rounded shadow-md rotate-3">
                 <span className="font-semibold">ATS-friendly</span>
               </div>
             </div>
