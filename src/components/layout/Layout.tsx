@@ -12,7 +12,7 @@ const Layout = ({ children, withFooter = true }: LayoutProps) => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-grow pt-20">{children}</main>
+      <main className="flex-grow w-full overflow-x-hidden">{children}</main>
       {withFooter && <Footer />}
     </div>
   );

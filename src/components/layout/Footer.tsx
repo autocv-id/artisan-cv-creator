@@ -1,11 +1,12 @@
+
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-50 py-12 mt-16">
+    <footer className="bg-gray-50 py-10 md:py-12 mt-8 md:mt-16">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center mb-4">
               <span className="text-resume-primary font-playfair font-bold text-xl">Resuma</span>
             </Link>
@@ -43,7 +44,7 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row md:items-center justify-between">
+        <div className="border-t border-gray-200 mt-8 pt-6 md:pt-8 flex flex-col md:flex-row md:items-center justify-between">
           <p className="text-gray-600 text-sm">
             &copy; {new Date().getFullYear()} Resuma. All rights reserved.
           </p>
