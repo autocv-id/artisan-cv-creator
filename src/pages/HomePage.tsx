@@ -19,7 +19,7 @@ const HomePage = () => {
   
   return (
     <Layout>
-      {/* Hero Section */}
+      {/* Hero Section with Video */}
       <section className="bg-gradient-to-b from-blue-50 to-white pt-16 pb-24">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col lg:flex-row items-center gap-12">
@@ -30,6 +30,30 @@ const HomePage = () => {
               <p className="text-base md:text-lg text-gray-700 max-w-xl">
                 Build a standout resume that gets you hired. Our easy-to-use tools and expert guidance make resume creation simple and effective.
               </p>
+              
+              {/* Video Demo */}
+              <div className="relative rounded-lg overflow-hidden shadow-xl bg-gray-900 aspect-video mt-6">
+                {/* Placeholder video thumbnail */}
+                <img 
+                  src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d" 
+                  alt="Video thumbnail" 
+                  className="w-full h-full object-cover opacity-80"
+                />
+                
+                {/* Play button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <button className="bg-white/90 hover:bg-white text-resume-primary rounded-full p-3 md:p-4 shadow-lg transform transition-transform hover:scale-110">
+                    <Play className="w-8 h-8 md:w-10 md:h-10 fill-current" />
+                  </button>
+                </div>
+                
+                {/* Video caption */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4">
+                  <h3 className="text-white text-sm md:text-lg font-medium">Create Your Resume in 3 Simple Steps</h3>
+                  <p className="text-white/80 text-xs md:text-sm mt-1">Duration: 2:45</p>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link to="/editor/new">
                   <Button className="bg-resume-primary hover:bg-resume-primary/90 text-white px-6 py-5 text-base md:text-lg flex gap-2 items-center w-full sm:w-auto">
@@ -54,42 +78,6 @@ const HomePage = () => {
               </div>
               <div className="absolute -bottom-6 right-0 md:right-[450px] bg-resume-accent text-white py-2 px-4 rounded shadow-md rotate-3">
                 <span className="font-semibold">ATS-friendly</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Video Demo Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-resume-primary mb-4">See How It Works</h2>
-            <p className="text-base md:text-lg text-gray-700 max-w-2xl mx-auto">
-              Watch our quick demo to see how easy it is to create a professional resume with Resuma
-            </p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="relative rounded-xl overflow-hidden shadow-2xl bg-gray-900 aspect-video">
-              {/* Placeholder video thumbnail */}
-              <img 
-                src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d" 
-                alt="Video thumbnail" 
-                className="w-full h-full object-cover opacity-70"
-              />
-              
-              {/* Play button */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <button className="bg-white/90 hover:bg-white text-resume-primary rounded-full p-4 shadow-lg transform transition-transform hover:scale-110">
-                  <Play className="w-10 h-10 md:w-16 md:h-16 fill-current" />
-                </button>
-              </div>
-              
-              {/* Video caption */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 md:p-6">
-                <h3 className="text-white text-lg md:text-xl font-medium">Create Your Professional Resume in 3 Simple Steps</h3>
-                <p className="text-white/80 text-sm md:text-base mt-2">Duration: 2:45</p>
               </div>
             </div>
           </div>
