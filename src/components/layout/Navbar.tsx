@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -40,10 +39,10 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm py-3 md:py-4 fixed top-0 w-full z-50">
+    <nav className="bg-white shadow-sm py-4 fixed top-0 w-full z-50">
       <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-primary font-playfair font-bold text-xl md:text-2xl">Resuma</span>
+          <span className="text-primary font-playfair font-bold text-2xl">Resuma</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -115,7 +114,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile menu button */}
-        <button className="md:hidden" onClick={toggleMenu} aria-label="Toggle menu">
+        <button className="md:hidden" onClick={toggleMenu}>
           {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
@@ -124,49 +123,26 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white absolute top-16 left-0 w-full animate-in shadow-md">
           <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
-            <Link 
-              to="/templates" 
-              className="text-gray-600 hover:text-primary transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <Link to="/templates" className="text-gray-600 hover:text-primary transition-colors py-2">
               Templates
             </Link>
-            <Link 
-              to="/features" 
-              className="text-gray-600 hover:text-primary transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <Link to="/features" className="text-gray-600 hover:text-primary transition-colors py-2">
               Features
             </Link>
-            <Link 
-              to="/pricing" 
-              className="text-gray-600 hover:text-primary transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <Link to="/pricing" className="text-gray-600 hover:text-primary transition-colors py-2">
               Pricing
             </Link>
             
             {user ? (
               <>
-                <Link 
-                  to="/dashboard" 
-                  className="text-gray-600 hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+                <Link to="/dashboard" className="text-gray-600 hover:text-primary transition-colors py-2">
                   My Resumes
                 </Link>
-                <Link 
-                  to="/profile" 
-                  className="text-gray-600 hover:text-primary transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+                <Link to="/profile" className="text-gray-600 hover:text-primary transition-colors py-2">
                   Profile
                 </Link>
                 <button 
-                  onClick={() => {
-                    handleSignOut();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={handleSignOut}
                   className="text-left text-gray-600 hover:text-primary transition-colors py-2"
                 >
                   Log out
@@ -174,12 +150,12 @@ const Navbar = () => {
               </>
             ) : (
               <div className="flex flex-col gap-3 pt-2">
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/login">
                   <Button variant="outline" className="font-medium w-full">
                     Log in
                   </Button>
                 </Link>
-                <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/signup">
                   <Button className="font-medium w-full bg-primary hover:bg-primary/90">
                     Sign up
                   </Button>
