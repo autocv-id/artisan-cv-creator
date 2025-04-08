@@ -1,4 +1,3 @@
-
 export interface ResumeData {
   basics: {
     name: string;
@@ -157,117 +156,169 @@ export type ResumeDataType = {
 
 // Helper function to convert ResumeDataType to ResumeData for API compatibility
 export function convertToResumeData(data: ResumeDataType): ResumeData {
+  // Ensure all data is properly serializable for Supabase storage
+  // by making sure no undefined values exist
+  const safeData = JSON.parse(JSON.stringify(data));
+  
   return {
     basics: {
-      name: data.personalInfo.fullName,
-      label: data.personalInfo.title,
-      email: data.personalInfo.email,
-      phone: data.personalInfo.phone,
-      url: data.personalInfo.website,
+      name: safeData.personalInfo.fullName || '',
+      label: safeData.personalInfo.title || '',
+      email: safeData.personalInfo.email || '',
+      phone: safeData.personalInfo.phone || '',
+      url: safeData.personalInfo.website || '',
       location: {
-        address: data.personalInfo.location,
+        address: safeData.personalInfo.location || '',
         city: '',
         region: '',
         postalCode: '',
         countryCode: ''
       },
-      summary: data.personalInfo.summary
+      summary: safeData.personalInfo.summary || ''
     },
-    work: data.experience.map(exp => ({
-      company: exp.company,
-      position: exp.position,
+    work: (safeData.experience || []).map(exp => ({
+      company: exp.company || '',
+      position: exp.position || '',
       website: '',
-      startDate: exp.startDate,
-      endDate: exp.endDate,
-      summary: exp.description,
+      startDate: exp.startDate || '',
+      endDate: exp.endDate || '',
+      summary: exp.description || '',
       highlights: []
     })),
-    education: data.education.map(edu => ({
-      institution: edu.school,
-      area: edu.field,
-      studyType: edu.degree,
-      startDate: edu.startDate,
-      endDate: edu.endDate,
+    education: (safeData.education || []).map(edu => ({
+      institution: edu.school || '',
+      area: edu.field || '',
+      studyType: edu.degree || '',
+      startDate: edu.startDate || '',
+      endDate: edu.endDate || '',
       gpa: '',
-      description: edu.description,
-      id: edu.id,
-      school: edu.school,
-      degree: edu.degree,
-      field: edu.field
+      description: edu.description || '',
+      id: edu.id || 0,
+      school: edu.school || '',
+      degree: edu.degree || '',
+      field: edu.field || ''
     })),
-    skills: data.skills.map(skill => ({
-      name: skill,
+    skills: (safeData.skills || []).map(skill => ({
+      name: skill || '',
       level: '',
       keywords: []
     })),
-    languages: data.languages.map(lang => ({
-      language: lang,
+    languages: (safeData.languages || []).map(lang => ({
+      language: lang || '',
       fluency: ''
     })),
     projects: [],
     // Additional fields
-    sections: data.sections,
-    experience: data.experience,
-    certifications: data.certifications,
-    awards: data.awards,
-    expertise: data.expertise,
-    achievements: data.achievements,
-    personalInfo: data.personalInfo
-  };
-}
-
-// Helper function to convert ResumeData to ResumeDataType for internal use
-export function convertToResumeDataType(data: ResumeData): ResumeDataType {
-  // Create a default personalInfo object from basics if personalInfo is not provided
-  const personalInfo = data.personalInfo || {
-    fullName: data.basics.name,
-    title: data.basics.label,
-    email: data.basics.email,
-    phone: data.basics.phone,
-    location: data.basics.location.address,
-    summary: data.basics.summary,
-    website: data.basics.url || ''  // Set default empty string to make it non-optional
-  };
-  
-  return {
-    personalInfo,
-    experience: data.experience || data.work.map((job, index) => ({
-      id: index + 1,
-      company: job.company,
-      position: job.position,
-      startDate: job.startDate,
-      endDate: job.endDate,
-      description: job.summary
-    })),
-    education: data.education.map((edu, index) => ({
-      id: edu.id || index + 1,
-      school: edu.school || edu.institution,
-      degree: edu.degree || edu.studyType,
-      field: edu.field || edu.area,
-      startDate: edu.startDate,
-      endDate: edu.endDate,
-      description: edu.description || ''
-    })),
-    skills: Array.isArray(data.skills) ? data.skills.map(s => typeof s === 'string' ? s : s.name) : [],
-    languages: Array.isArray(data.languages) ? data.languages.map(l => typeof l === 'string' ? l : l.language) : [],
-    certifications: data.certifications || [],
-    awards: data.awards || [],
-    expertise: data.expertise || [],
-    achievements: data.achievements || [],
-    sections: data.sections ? {
-      summary: data.sections.summary,
-      expertise: data.sections.expertise,
-      achievements: data.sections.achievements,
-      experience: data.sections.experience,
-      education: data.sections.education,
-      additional: data.sections.additional
-    } : {
+    sections: safeData.sections || {
       summary: true,
       expertise: true,
       achievements: true,
       experience: true,
       education: true,
       additional: true
-    }
+    },
+    experience: safeData.experience || [],
+    certifications: safeData.certifications || [],
+    awards: safeData.awards || [],
+    expertise: safeData.expertise || [],
+    achievements: safeData.achievements || [],
+    personalInfo: safeData.personalInfo || {}
   };
+}
+
+// Helper function to convert ResumeData to ResumeDataType for internal use
+export function convertToResumeDataType(data: ResumeData): ResumeDataType {
+  try {
+    // Ensure we have a safe copy of the data to work with
+    const safeData = typeof data === 'object' ? JSON.parse(JSON.stringify(data)) : {};
+    
+    // Set defaults for potentially missing data
+    if (!safeData.basics) safeData.basics = {};
+    if (!safeData.work) safeData.work = [];
+    if (!safeData.education) safeData.education = [];
+    if (!safeData.skills) safeData.skills = [];
+    if (!safeData.languages) safeData.languages = [];
+    
+    // Create a default personalInfo object from basics if personalInfo is not provided
+    const personalInfo = safeData.personalInfo || {
+      fullName: safeData.basics.name || '',
+      title: safeData.basics.label || '',
+      email: safeData.basics.email || '',
+      phone: safeData.basics.phone || '',
+      location: safeData.basics.location?.address || '',
+      summary: safeData.basics.summary || '',
+      website: safeData.basics.url || ''
+    };
+    
+    // Handle direct experience field or convert from work
+    const experience = safeData.experience || safeData.work.map((job: any, index: number) => ({
+      id: index + 1,
+      company: job.company || '',
+      position: job.position || '',
+      startDate: job.startDate || '',
+      endDate: job.endDate || '',
+      description: job.summary || ''
+    }));
+    
+    // Convert education
+    const education = safeData.education.map((edu: any, index: number) => ({
+      id: edu.id || index + 1,
+      school: edu.school || edu.institution || '',
+      degree: edu.degree || edu.studyType || '',
+      field: edu.field || edu.area || '',
+      startDate: edu.startDate || '',
+      endDate: edu.endDate || '',
+      description: edu.description || ''
+    }));
+    
+    // Handle skills array which can be complex objects or strings
+    const skills = Array.isArray(safeData.skills) 
+      ? safeData.skills.map((s: any) => typeof s === 'string' ? s : (s.name || ''))
+      : [];
+    
+    // Handle languages array
+    const languages = Array.isArray(safeData.languages)
+      ? safeData.languages.map((l: any) => typeof l === 'string' ? l : (l.language || ''))
+      : [];
+    
+    return {
+      personalInfo,
+      experience,
+      education,
+      skills,
+      languages,
+      certifications: safeData.certifications || [],
+      awards: safeData.awards || [],
+      expertise: safeData.expertise || [],
+      achievements: safeData.achievements || [],
+      sections: safeData.sections || {
+        summary: true,
+        expertise: true,
+        achievements: true,
+        experience: true,
+        education: true,
+        additional: true
+      }
+    };
+  } catch (error) {
+    console.error('Error converting ResumeData to ResumeDataType:', error);
+    // Return empty default data as fallback
+    return {
+      personalInfo: {
+        fullName: '',
+        title: '',
+        email: '',
+        phone: '',
+        location: '',
+        summary: '',
+        website: ''
+      },
+      experience: [],
+      education: [],
+      skills: [],
+      languages: [],
+      certifications: [],
+      awards: []
+    };
+  }
 }
